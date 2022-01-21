@@ -1,5 +1,7 @@
 #pragma once
 #include "byte.hpp"
+#include "common.hpp"
+#include <vector>
 
 namespace bmp {
 	struct Color {
@@ -35,4 +37,101 @@ namespace bmp {
 			maroon = 0x880000,
 			teal = 0x225566;
 	}
+
+	class ColorProvider {
+	public:
+		constexpr static uint8_t degree_cnt = 15;
+
+		virtual Color get(int32_t x, int32_t y) const = 0;
+	protected:
+		static bool getShade(int32_t x, int32_t y, uint8_t degree);
+	};
+
+	class FlatColor : public ColorProvider {
+	private:
+		Color color;
+	public:
+		FlatColor(Color color) : color(color) {}
+
+		virtual inline Color get(int32_t x, int32_t y) const override {
+			return color;
+		}
+	};
+
+	class FlatShade : public ColorProvider {
+	private:
+		Color color[2];
+		uint8_t degree;
+	public:
+		FlatShade(Color color1, Color color2, uint8_t degree) :	degree(degree) {
+			color[0] = color1;
+			color[1] = color2;
+		}
+
+		virtual inline Color get(int32_t x, int32_t y) const override {
+			return color[getShade(x, y, degree)];
+		}
+	};
+
+	class Gradient : public ColorProvider {
+	protected:
+		std::vector<Color> colors;
+		int32_t x, y, dx, dy;
+	public:
+		Gradient(std::vector<Color> &&colors, int32_t x, int32_t y, int32_t dx, int32_t dy) :
+			colors(colors), x(x), y(y), dx(dx), dy(dy) {}
+	};
+
+	class ShapedGradient : public Gradient {
+	protected:
+		double unit_dist = 0;
+	public:
+		ShapedGradient(std::vector<Color> &&colors,
+			int32_t x, int32_t y, int32_t dx, int32_t dy) :
+			Gradient(std::move(colors), x, y, dx, dy) {}
+	protected:
+		virtual double dist(int32_t xp, int32_t yp) const = 0;
+	};
+
+	class LinearGradient : public ShapedGradient {
+	public:
+		LinearGradient(std::vector<Color> &&colors,
+			int32_t x, int32_t y, int32_t dx, int32_t dy) :
+			ShapedGradient(std::move(colors), x, y, dx, dy)	{
+			unit_dist = dist(x + dx, y + dy);
+		}
+	protected:
+		virtual double dist(int32_t xp, int32_t yp) const override;
+	};
+
+	class RadialGradient : public ShapedGradient {
+	public:
+		RadialGradient(std::vector<Color> &&colors,
+			int32_t x, int32_t y, int32_t dx, int32_t dy) :
+			ShapedGradient(std::move(colors), x, y, dx, dy) {
+			unit_dist = dist(x + dx, y + dy);
+		}
+	protected:
+		virtual double dist(int32_t xp, int32_t yp) const override;
+	};
+
+	class ConicalGradient : public ShapedGradient {
+	public:
+		ConicalGradient(std::vector<Color> &&colors,
+			int32_t x, int32_t y, int32_t dx, int32_t dy) :
+			ShapedGradient(std::move(colors), x, y, dx, dy) {
+			unit_dist = dist(x + dx, y + dy);
+		}
+	protected:
+		virtual double dist(int32_t xp, int32_t yp) const override;
+	};
+
+	class BinaryLinearGradient : public LinearGradient {
+	public:
+		BinaryLinearGradient(std::vector<Color> &&colors,
+			int32_t x, int32_t y, int32_t dx, int32_t dy) :
+			LinearGradient(std::move(colors), x, y, dx, dy) {}
+
+		virtual Color get(int32_t x, int32_t y) const override;
+	};
 }

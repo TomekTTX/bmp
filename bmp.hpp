@@ -5,13 +5,13 @@
 #include <functional>
 #include <string_view>
 
+#include "common.hpp"
 #include "matrix.hpp"
 #include "colors.hpp"
-#include "positions.hpp"
 #include "ascii.hpp"
+#include "shapes.hpp"
 
 namespace bmp {
-	inline int32_t round(double d) { return static_cast<int32_t>(std::round(d)); }
 
 	struct BitmapFileHeader {
 		uint16_t bfType;
@@ -84,6 +84,7 @@ namespace bmp {
 		using BezierArrayQuadr = std::array<Pos<double>, 3>;
 		using BezierArrayCubic = std::array<Pos<double>, 4>;
 		using ParamFunc = std::function<double(double)>;
+		//struct Gradient { Color primary, secondary; uint8_t degree; };
 
 		BMP(std::istream &ist, Color bgColor = colors::white);
 		BMP(std::size_t width, std::size_t height, Color bgColor = colors::white);
@@ -95,9 +96,17 @@ namespace bmp {
 		inline Color pixel(int32_t x, int32_t y) const { return color_space[invY(y)][x]; }
 		inline Color &pixel(int32_t x, int32_t y) { return color_space[invY(y)][x]; }
 		inline void drawPixel(int32_t x, int32_t y, Color color) { pixel(x, y) = color; }
+		inline void drawPixel(int32_t x, int32_t y, const ColorProvider &cp) { pixel(x, y) = cp.get(x, y); }
 		inline void drawPixelRound(double x, double y, Color color) {
-			pixel(round(x), round(y)) = color;
+			drawPixel(rnd(x), rnd(y), color);
 		}
+		inline void drawPixelRound(double x, double y, const ColorProvider &cp) {
+			drawPixel(rnd(x), rnd(y), cp);
+		}
+
+		void drawShape(const shp::Shape &shape, Color color, int32_t x = 0, int32_t y = 0);
+		void drawShape(const shp::Shape &shape,	const ColorProvider &prov,
+			int32_t x = 0, int32_t y = 0);
 
 		void drawSimpleLine(int32_t x, int32_t y, int8_t dx, int8_t dy, int32_t len, Color color);
 		void drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, Color color);
@@ -147,6 +156,7 @@ namespace bmp {
 		void clear();
 
 		void writeTo(std::ostream &ost) const;
+		void writeTo(const std::string_view &fileName) const;
 	private:
 		inline int32_t invY(int32_t y) const { return bih.biHeight - 1 - y; }
 		inline static bool ellipse_pred_int(int32_t x, int32_t y, int32_t rx, int32_t ry) {
@@ -165,5 +175,6 @@ namespace bmp {
 		static bool evenOddRule(int32_t x, int32_t y, const Poly &poly, bool include_border = false);
 		static Poly rotatedRect(int32_t x0, int32_t y0, int32_t x1, int32_t y1, double rotation);
 		static std::array<int32_t, 4> boundingRect(const Poly &poly);
+		//static bool getGradient(int32_t x, int32_t y, uint8_t degree);
 	};
 }

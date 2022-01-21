@@ -1,10 +1,11 @@
+#include <iostream>
 #include <fstream>
 #include "bmp.hpp"
-
+#include "shapes.hpp"
 using namespace bmp;
 
 void drawGear(BMP &bmp) {
-	constexpr uint32_t count = 20;
+	constexpr uint32_t count = 16;
 	constexpr double angle_base = 3.141593 / (2. * count);
 	const Poly gear = Poly::interleaveMany({
 		Poly::regular(100, 100, 100, count),
@@ -18,15 +19,21 @@ void drawGear(BMP &bmp) {
 }
 
 int main() {
-	BMP bmp{ 201,201,colors::white };
+	BMP bmp{ 1000,1000 };
+	BinaryLinearGradient grad{
+		{colors::red, colors::orange, colors::yellow, colors::green, colors::cyan, colors::blue, colors::purple } ,
+		160, 160, 8, 8};
+	shp::FilledCircle circ{ 500,500,499 };
+	
+	bmp.drawShape(circ, grad);
 
-	drawGear(bmp);
+	//for (int32_t i = 0; i < 15; ++i)
+	//	bmp.drawGradient(30 * i, 0, 30, 30, colors::black, 0xDDDDDD, i);
 
-	std::fstream file{ "test.bmp", std::ios::out | std::ios::binary };
-	bmp.writeTo(file);
-
+	bmp.writeTo("test.bmp");
 	return 0;
 }
+
 
 /*
 
@@ -35,14 +42,14 @@ int main() {
 	BMP bmp{ 201,201,colors::black };
 	bmp.drawFilledPolygon(penta, colors::maroon, colors::red);
 	bmp.drawCircle(100, 100, 100, colors::maroon);
-*/
+
 
 
 
 //bmp.drawFilledPolygon(Poly::interleaveMany({ p[0],p[1],p[2],p[3] }), colors::gray, colors::silver);
 //bmp.drawFilledCircle(100, 100, 20, colors::gray, colors::white);
 
-/*
+
 for (int32_t i = 0; i < 29; ++i)
 	bmp.drawEllipse(i*i + 5*i + 8, 100, i + 1, 2 * i + 1, Colors::red);
 bmp.floodFill(500, 100, 0x4FAA11);

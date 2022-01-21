@@ -1,14 +1,11 @@
 #include <cmath>
 #include <queue>
 #include <unordered_set>
+#include <fstream>
 #include "bmp.hpp"
 #include "ascii.hpp"
 
 namespace bmp {
-	constexpr static double tau = 6.28318530718;
-	constexpr static double pi  = 3.14159265359;
-
-	constexpr int8_t sgn(int32_t x) { return (x > 0) - (x < 0); }
 
 	void BitmapFileHeader::readFrom(std::istream &ist) {
 		ist.read(reinterpret_cast<char *>(&bfType), sizeof bfType);
@@ -117,6 +114,22 @@ namespace bmp {
 		}
 	}
 
+	void BMP::writeTo(const std::string_view &fileName) const {
+		std::ofstream file{ fileName.data(), std::ios::binary | std::ios::out };
+		if (file.is_open())
+			writeTo(file);
+	}
+
+	void BMP::drawShape(const shp::Shape &shape, Color color, int32_t x, int32_t y) {
+		for (const auto &p : shape)
+			drawPixel(p.x + x, p.y + y, color);
+	}
+
+	void BMP::drawShape(const shp::Shape &shape, const ColorProvider &prov, int32_t x, int32_t y) {
+		for (const auto &p : shape)
+			drawPixel(p.x + x, p.y + y, prov);
+	}
+
 	void BMP::drawSimpleLine(int32_t x, int32_t y, int8_t dx, int8_t dy, int32_t len, Color color) {
 		dx = sgn(dx);
 		dy = sgn(dy);
@@ -165,7 +178,7 @@ namespace bmp {
 
 	void BMP::drawQuadrBezier(const BezierArrayQuadr &pts, Color color) {
 		constexpr double step_base = 0.5;
-		const double steps[] = { pts[0].distance(pts[1]) + 1, pts[1].distance(pts[2]) + 1 };
+		const double steps[] = { pts[0].dist(pts[1]) + 1, pts[1].dist(pts[2]) + 1 };
 		double step = step_base / steps[0];
 
 		for (double t = 0, it = 1; t <= 1; it = 1 - (t += step)) {
@@ -194,9 +207,9 @@ namespace bmp {
 	void BMP::drawCubicBezier(const BezierArrayCubic &pts, Color color) {
 		constexpr double step_base = 0.5;
 		const double steps[] = {
-			pts[0].distance(pts[1]) + 1,
-			pts[1].distance(pts[2]) + 1,
-			pts[2].distance(pts[3]) + 1
+			pts[0].dist(pts[1]) + 1,
+			pts[1].dist(pts[2]) + 1,
+			pts[2].dist(pts[3]) + 1
 		};
 		double step = step_base / steps[0];
 
@@ -229,7 +242,7 @@ namespace bmp {
 		const double t_inc = 1. / density;
 
 		for (double t = tmin; t <= tmax; t += t_inc)
-			drawPixel(x + round(xfunc(t)), y + round(yfunc(t)), color);
+			drawPixel(x + rnd(xfunc(t)), y + rnd(yfunc(t)), color);
 	}
 
 	void BMP::drawRect(int32_t x0, int32_t y0, int32_t x1, int32_t y1, Color color) {
@@ -457,10 +470,10 @@ namespace bmp {
 		};
 
 		return {
-			{ round(rect[0].x + xm), round(rect[0].y + ym) },
-			{ round(rect[1].x + xm), round(rect[1].y + ym) },
-			{ round(rect[2].x + xm), round(rect[2].y + ym) },
-			{ round(rect[3].x + xm), round(rect[3].y + ym) },
+			{ rnd(rect[0].x + xm), rnd(rect[0].y + ym) },
+			{ rnd(rect[1].x + xm), rnd(rect[1].y + ym) },
+			{ rnd(rect[2].x + xm), rnd(rect[2].y + ym) },
+			{ rnd(rect[3].x + xm), rnd(rect[3].y + ym) },
 		};
 	}
 
@@ -476,6 +489,7 @@ namespace bmp {
 
 		return ret;
 	}
+
 
 	Poly &Poly::interleave(const Poly &other, uint32_t skip_count) {
 		std::vector<Pos<int32_t>> new_vertices{};
@@ -544,7 +558,7 @@ namespace bmp {
 		std::vector<Pos<int32_t>> pts{};
 
 		while (deg--) {
-			pts.push_back({ round(x + r * cos(-angle)),round(y + r * sin(-angle)) });
+			pts.push_back({ rnd(x + r * cos(-angle)),rnd(y + r * sin(-angle)) });
 			angle += angle_inc;
 		}
 

@@ -52,7 +52,7 @@ struct Pos {
 		return dx * dx + dy * dy;
 	}
 
-	double distance(const Pos &other) const {
+	double dist(const Pos &other) const {
 		return std::sqrt(distance2(other));
 	}
 

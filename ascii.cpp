@@ -1,6 +1,7 @@
 #include <functional>
 #include "bmp.hpp"
 #include "ascii.hpp"
+#include "common.hpp"
 
 namespace bmp {
 	constexpr int32_t baseSizeX = 16, baseSizeY = 20;
@@ -10,10 +11,10 @@ namespace bmp {
 
 	void drawChar_excl(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.5 * scaleX),
+			x1 = rnd(x + baseSizeX * 0.5 * scaleX),
 			y0 = y,
-			y1 = round(y + baseSizeY * 1. * scaleY),
-			ly = round(baseSizeY * 0.8 * scaleY);
+			y1 = rnd(y + baseSizeY * 1. * scaleY),
+			ly = rnd(baseSizeY * 0.8 * scaleY);
 
 		bmp.drawSimpleLine(x1, y0, 0, 1, ly, color);
 		bmp.drawPixel(x1, y1, color);
@@ -21,10 +22,10 @@ namespace bmp {
 
 	void drawChar_quot(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.4 * scaleX),
-			x2 = round(x + baseSizeX * 0.6 * scaleX),
+			x1 = rnd(x + baseSizeX * 0.4 * scaleX),
+			x2 = rnd(x + baseSizeX * 0.6 * scaleX),
 			y0 = y,
-			ly = round(baseSizeY * 0.2 * scaleY);
+			ly = rnd(baseSizeY * 0.2 * scaleY);
 
 		bmp.drawSimpleLine(x1, y0, 0, 1, ly, color);
 		bmp.drawSimpleLine(x2, y0, 0, 1, ly, color);
@@ -63,14 +64,14 @@ namespace bmp {
 
 	void drawChar_A(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x),
-			x2 = round(x + baseSizeX * 0.25 * scaleX),
-			x3 = round(x + baseSizeX * 0.5 * scaleX),
-			x4 = round(x + baseSizeX * 0.75 * scaleX),
-			x5 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y1 = round(y),
-			y2 = round(y + baseSizeY * 0.55 * scaleY),
-			y3 = round(y + baseSizeY * 1. * scaleY);
+			x1 = rnd(x),
+			x2 = rnd(x + baseSizeX * 0.25 * scaleX),
+			x3 = rnd(x + baseSizeX * 0.5 * scaleX),
+			x4 = rnd(x + baseSizeX * 0.75 * scaleX),
+			x5 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y1 = rnd(y),
+			y2 = rnd(y + baseSizeY * 0.55 * scaleY),
+			y3 = rnd(y + baseSizeY * 1. * scaleY);
 
 		bmp.drawLine(x1, y3, x3, y1, color);
 		bmp.drawLine(x3, y1, x5, y3, color);
@@ -79,24 +80,24 @@ namespace bmp {
 
 	void drawChar_B(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.1 * scaleX),
-			x2 = round(x + baseSizeX * 1.05 * scaleX),
-			x3 = round(x + baseSizeX * 1.25 * scaleX),
-			y1 = round(y),
-			y2 = round(y + baseSizeY * 0.47 * scaleY),
-			y3 = round(y + baseSizeY * 0.5 * scaleY),
-			y4 = round(y + baseSizeY * 0.53 * scaleY),
-			y5 = round(y + baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 0.1 * scaleX),
+			x2 = rnd(x + baseSizeX * 1.05 * scaleX),
+			x3 = rnd(x + baseSizeX * 1.25 * scaleX),
+			y1 = rnd(y),
+			y2 = rnd(y + baseSizeY * 0.47 * scaleY),
+			y3 = rnd(y + baseSizeY * 0.5 * scaleY),
+			y4 = rnd(y + baseSizeY * 0.53 * scaleY),
+			y5 = rnd(y + baseSizeY * 1. * scaleY);
 
-		bmp.drawSimpleLine(x1, y1, 0, 1, round(baseSizeY * scaleY), color);
+		bmp.drawSimpleLine(x1, y1, 0, 1, rnd(baseSizeY * scaleY), color);
 		bmp.drawCubicBezier({ PosD(x1,y1), PosD(x2,y1), PosD(x2,y4), PosD(x1,y3) }, color);
 		bmp.drawCubicBezier({ PosD(x1,y3), PosD(x3,y2), PosD(x3,y5), PosD(x1,y5) }, color);
 	}
 
 	void drawChar_C(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			rx = round(baseSizeX * 0.5 * scaleX),
-			ry = round(baseSizeY * 0.5 * scaleY);
+			rx = rnd(baseSizeX * 0.5 * scaleX),
+			ry = rnd(baseSizeY * 0.5 * scaleY);
 
 		bmp.drawArc(x + rx, y + ry, rx, ry, 0.5, 5.8, color);
 	}
@@ -106,22 +107,22 @@ namespace bmp {
 		const double
 			x1 = x,
 			y1 = y,
-			x2 = round(x + baseSizeX * 1.2 * scaleX),
-			y2 = round(y + baseSizeY * 1 * scaleY);
+			x2 = rnd(x + baseSizeX * 1.2 * scaleX),
+			y2 = rnd(y + baseSizeY * 1 * scaleY);
 
 
-		bmp.drawSimpleLine(x, y, 0, 1, round(baseSizeY * scaleY), color);
+		bmp.drawSimpleLine(x, y, 0, 1, rnd(baseSizeY * scaleY), color);
 		arr[0] = { x1,y1 }, arr[1] = { x2,y1 }, arr[2] = { x2,y2 }, arr[3] = { x1,y2 };
 		bmp.drawCubicBezier(arr, color);
 	}
 
 	void drawChar_E(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			y1 = round(y + baseSizeY * 0.5 * scaleY),
-			y2 = round(y + baseSizeY * 1. * scaleY),
-			lx1 = round(baseSizeX * 1. * scaleX) - 2,
-			lx2 = round(baseSizeX * 0.75 * scaleX) - 2,
-			ly = round(baseSizeY * 1. * scaleY);
+			y1 = rnd(y + baseSizeY * 0.5 * scaleY),
+			y2 = rnd(y + baseSizeY * 1. * scaleY),
+			lx1 = rnd(baseSizeX * 1. * scaleX) - 2,
+			lx2 = rnd(baseSizeX * 0.75 * scaleX) - 2,
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, ly, color);
 		bmp.drawSimpleLine(x, y, 1, 0, lx1, color);
@@ -131,10 +132,10 @@ namespace bmp {
 
 	void drawChar_F(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			y1 = round(y + baseSizeY * 0.5 * scaleY),
-			lx1 = round(baseSizeX * 1. * scaleX) - 2,
-			lx2 = round(baseSizeX * 0.75 * scaleX) - 2,
-			ly = round(baseSizeY * 1. * scaleY);
+			y1 = rnd(y + baseSizeY * 0.5 * scaleY),
+			lx1 = rnd(baseSizeX * 1. * scaleX) - 2,
+			lx2 = rnd(baseSizeX * 0.75 * scaleX) - 2,
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, ly, color);
 		bmp.drawSimpleLine(x, y, 1, 0, lx1, color);
@@ -143,19 +144,19 @@ namespace bmp {
 
 	void drawChar_G(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.55 * scaleX),
-			rx = round(baseSizeX * 0.5 * scaleX) - 1,
-			ry = round(baseSizeY * 0.5 * scaleY);
+			x1 = rnd(x + baseSizeX * 0.55 * scaleX),
+			rx = rnd(baseSizeX * 0.5 * scaleX) - 1,
+			ry = rnd(baseSizeY * 0.5 * scaleY);
 
 		bmp.drawArc(x + rx, y + ry, rx, ry, 0.6, 6.2831, color);
-		bmp.drawSimpleLine(x1, y + ry, 1, 0, round(baseSizeX * 0.3 * scaleX), color);
+		bmp.drawSimpleLine(x1, y + ry, 1, 0, rnd(baseSizeX * 0.3 * scaleX), color);
 	}
 
 	void drawChar_H(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y1 = round(y + baseSizeY * 0.5 * scaleY),
-			y2 = round(y + baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y1 = rnd(y + baseSizeY * 0.5 * scaleY),
+			y2 = rnd(y + baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, y2 - y, color);
 		bmp.drawSimpleLine(x1, y, 0, 1, y2 - y, color);
@@ -164,11 +165,11 @@ namespace bmp {
 
 	void drawChar_I(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.3 * scaleX),
-			x2 = round(x + baseSizeX * 0.5 * scaleX),
-			y1 = round(y + baseSizeY * 1. * scaleY),
-			lx = round(baseSizeX * 0.4 * scaleX),
-			ly = round(baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 0.3 * scaleX),
+			x2 = rnd(x + baseSizeX * 0.5 * scaleX),
+			y1 = rnd(y + baseSizeY * 1. * scaleY),
+			lx = rnd(baseSizeX * 0.4 * scaleX),
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x1, y, 1, 0, lx, color);
 		bmp.drawSimpleLine(x1, y1, 1, 0, lx, color);
@@ -177,12 +178,12 @@ namespace bmp {
 
 	void drawChar_J(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 1. * scaleX) - 1,
-			ly = round(baseSizeY * 0.6 * scaleY),
-			xm = round(x + baseSizeX * 0.5 * scaleX) - 1,
-			ym = round(y + baseSizeY * 0.6 * scaleY),
-			rx = round(baseSizeX * 0.5 * scaleX),
-			ry = round(baseSizeY * 0.4 * scaleY);
+			x1 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			ly = rnd(baseSizeY * 0.6 * scaleY),
+			xm = rnd(x + baseSizeX * 0.5 * scaleX) - 1,
+			ym = rnd(y + baseSizeY * 0.6 * scaleY),
+			rx = rnd(baseSizeX * 0.5 * scaleX),
+			ry = rnd(baseSizeY * 0.4 * scaleY);
 
 		bmp.drawSimpleLine(x1, y, 0, 1, ly, color);
 		bmp.drawArc(xm, ym, rx, ry, 3.5, 6.2831, color);
@@ -190,10 +191,10 @@ namespace bmp {
 
 	void drawChar_K(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y1 = round(y + baseSizeY * 0.5 * scaleY),
-			y2 = round(y + baseSizeY * 1. * scaleY),
-			ly = round(baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y1 = rnd(y + baseSizeY * 0.5 * scaleY),
+			y2 = rnd(y + baseSizeY * 1. * scaleY),
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, ly, color);
 		bmp.drawLine(x + 1, y1, x1, y, color);
@@ -202,8 +203,8 @@ namespace bmp {
 
 	void drawChar_L(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			lx = round(baseSizeX * 0.9 * scaleX) - 1,
-			ly = round(baseSizeY * 1. * scaleY);
+			lx = rnd(baseSizeX * 0.9 * scaleX) - 1,
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, ly, color);
 		bmp.drawSimpleLine(x, y + ly, 1, 0, lx, color);
@@ -211,10 +212,10 @@ namespace bmp {
 
 	void drawChar_M(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.5 * scaleX),
-			x2 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y1 = round(y + baseSizeY * 0.55 * scaleY),
-			ly = round(baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 0.5 * scaleX),
+			x2 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y1 = rnd(y + baseSizeY * 0.55 * scaleY),
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, ly, color);
 		bmp.drawSimpleLine(x2, y, 0, 1, ly, color);
@@ -224,9 +225,9 @@ namespace bmp {
 
 	void drawChar_N(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y1 = round(y + baseSizeY * 1. * scaleY),
-			ly = round(baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y1 = rnd(y + baseSizeY * 1. * scaleY),
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, ly, color);
 		bmp.drawSimpleLine(x1, y, 0, 1, ly, color);
@@ -235,17 +236,17 @@ namespace bmp {
 
 	void drawChar_O(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			rx = round(baseSizeX * 0.5 * scaleX) - 1,
-			ry = round(baseSizeY * 0.5 * scaleY);
+			rx = rnd(baseSizeX * 0.5 * scaleX) - 1,
+			ry = rnd(baseSizeY * 0.5 * scaleY);
 
 		bmp.drawEllipse(x + rx, y + ry, rx, ry, color);
 	}
 
 	void drawChar_P(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 1.05 * scaleX),
-			y1 = round(y + baseSizeY * 0.55 * scaleY),
-			ly = round(baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 1.05 * scaleX),
+			y1 = rnd(y + baseSizeY * 0.55 * scaleY),
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, ly, color);
 		bmp.drawCubicBezier({ PosD(x,y), PosD(x1,y), PosD(x1,y1), PosD(x,y1) }, color);
@@ -253,10 +254,10 @@ namespace bmp {
 
 	void drawChar_Q(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.65 * scaleX),
-			y1 = round(y + baseSizeY * 0.7 * scaleY),
-			x2 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y2 = round(y + baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 0.65 * scaleX),
+			y1 = rnd(y + baseSizeY * 0.7 * scaleY),
+			x2 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y2 = rnd(y + baseSizeY * 1. * scaleY);
 
 		drawChar_O(bmp, x, y, color, scaleX, scaleY);
 		bmp.drawLine(x1, y1, x2, y2, color);
@@ -264,9 +265,9 @@ namespace bmp {
 
 	void drawChar_R(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.9 * scaleX),
-			y1 = round(y + baseSizeY * 0.55 * scaleY),
-			y2 = round(y + baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 0.9 * scaleX),
+			y1 = rnd(y + baseSizeY * 0.55 * scaleY),
+			y2 = rnd(y + baseSizeY * 1. * scaleY);
 
 		drawChar_P(bmp, x, y, color, scaleX, scaleY);
 		bmp.drawLine(x, y1, x1, y2, color);
@@ -274,8 +275,8 @@ namespace bmp {
 
 	void drawChar_S(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			rx = round(baseSizeX * 0.5 * scaleX) - 1,
-			ry = round(baseSizeY * 0.5 * scaleY);
+			rx = rnd(baseSizeX * 0.5 * scaleX) - 1,
+			ry = rnd(baseSizeY * 0.5 * scaleY);
 		const BMP::ParamFunc xfunc = [=](double t) { return rx * sin(2 * t); };
 		const BMP::ParamFunc yfunc = [=](double t) { return ry * cos(t) * abs(cos(t)); };
 
@@ -284,9 +285,9 @@ namespace bmp {
 
 	void drawChar_T(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.5 * scaleX),
-			lx = round(baseSizeX * 1. * scaleX) - 1,
-			ly = round(baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 0.5 * scaleX),
+			lx = rnd(baseSizeX * 1. * scaleX) - 1,
+			ly = rnd(baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 1, 0, lx, color);
 		bmp.drawSimpleLine(x1, y, 0, 1, ly, color);
@@ -294,11 +295,11 @@ namespace bmp {
 
 	void drawChar_U(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			ly = round(baseSizeY * 0.6 * scaleY),
-			xm = round(x + (baseSizeX) * 0.5 * scaleX) - 1,
+			ly = rnd(baseSizeY * 0.6 * scaleY),
+			xm = rnd(x + (baseSizeX) * 0.5 * scaleX) - 1,
 			ym = y + ly,
-			rx = round((baseSizeX - 1.) * 0.5 * scaleX) - 1,
-			ry = round(baseSizeY * 0.4 * scaleY);
+			rx = rnd((baseSizeX - 1.) * 0.5 * scaleX) - 1,
+			ry = rnd(baseSizeY * 0.4 * scaleY);
 
 		bmp.drawSimpleLine(x, y, 0, 1, ly, color);
 		bmp.drawSimpleLine(x + 2 * rx, y, 0, 1, ly, color);
@@ -307,9 +308,9 @@ namespace bmp {
 
 	void drawChar_V(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.5 * scaleX),
-			x2 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y1 = round(y + baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 0.5 * scaleX),
+			x2 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y1 = rnd(y + baseSizeY * 1. * scaleY);
 
 		bmp.drawLine(x, y, x1, y1, color);
 		bmp.drawLine(x2, y, x1, y1, color);
@@ -317,20 +318,20 @@ namespace bmp {
 
 	void drawChar_W(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.25 * scaleX),
-			x2 = round(x + baseSizeX * 0.5 * scaleX),
-			x3 = round(x + baseSizeX * 0.75 * scaleX),
-			x4 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y1 = round(y + baseSizeY * 0.4 * scaleY),
-			y2 = round(y + baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 0.25 * scaleX),
+			x2 = rnd(x + baseSizeX * 0.5 * scaleX),
+			x3 = rnd(x + baseSizeX * 0.75 * scaleX),
+			x4 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y1 = rnd(y + baseSizeY * 0.4 * scaleY),
+			y2 = rnd(y + baseSizeY * 1. * scaleY);
 
 		bmp.drawPolyline({ {x,y},{x1,y2},{x2,y1},{x3,y2},{x4,y} }, color);
 	}
 
 	void drawChar_X(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 1. * scaleX) - 1,
-			y1 = round(y + baseSizeY * 1. * scaleY);
+			x1 = rnd(x + baseSizeX * 1. * scaleX) - 1,
+			y1 = rnd(y + baseSizeY * 1. * scaleY);
 
 		bmp.drawLine(x, y, x1, y1, color);
 		bmp.drawLine(x1, y, x, y1, color);
@@ -338,9 +339,9 @@ namespace bmp {
 
 	void drawChar_Y(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			x1 = round(x + baseSizeX * 0.5 * scaleX),
-			y1 = round(y + baseSizeY * 0.4 * scaleY),
-			ly = round(baseSizeY * 0.6 * scaleY);
+			x1 = rnd(x + baseSizeX * 0.5 * scaleX),
+			y1 = rnd(y + baseSizeY * 0.4 * scaleY),
+			ly = rnd(baseSizeY * 0.6 * scaleY);
 
 		drawChar_V(bmp, x, y, color, scaleX, scaleY * 0.4);
 		bmp.drawSimpleLine(x1, y1, 0, 1, ly, color);
@@ -348,9 +349,9 @@ namespace bmp {
 
 	void drawChar_Z(BMP &bmp, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
 		const int32_t
-			lx = round(baseSizeX * 1. * scaleX) - 1,
+			lx = rnd(baseSizeX * 1. * scaleX) - 1,
 			x1 = x + lx,
-			y1 = round(y + baseSizeY * 1. * scaleY);
+			y1 = rnd(y + baseSizeY * 1. * scaleY);
 
 		bmp.drawSimpleLine(x, y, 1, 0, lx, color);
 		bmp.drawSimpleLine(x, y1, 1, 0, lx, color);
@@ -530,8 +531,8 @@ namespace bmp {
 
 	Pos<int32_t> ascii_dimensions(double scaleX, double scaleY) {
 		return {
-			round(baseSizeX * scaleX),
-			round(baseSizeY * scaleY),
+			rnd(baseSizeX * scaleX),
+			rnd(baseSizeY * scaleY),
 		};
 	}
 }
