@@ -34,6 +34,34 @@ namespace shp {
 		};		
 	}
 
+	std::function<Shape::opt_type()> Rectangle::genFunc() const	{
+		return[this, xp = 0, yp = 0]() mutable->opt_type {
+			base_type ret{ x + xp,y + yp };
+
+			if (yp >= dy)
+				return std::nullopt;
+			xp += (yp == 0 || yp == dy - 1) ? 1 : dx - 1;
+			if (xp >= dx) {
+				xp = 0;
+				yp++;
+			}
+
+			return ret;
+		};
+	}
+
+	std::function<Shape::opt_type()> FilledRectangle::genFunc() const {
+		return[this, xp = 0, yp = 0]() mutable->opt_type {
+			if (xp >= dx) {
+				xp = 0;
+				yp++;
+			}
+			if (yp >= dy)
+				return std::nullopt;
+			return base_type(x + xp++, y + yp);
+		};
+	}
+
 	std::function<Shape::opt_type()> Circle::genFunc() const {
 		const double angle_inc = tau / (base_density * r);
 		const double half_step = angle_inc / 2;
@@ -117,11 +145,65 @@ namespace shp {
 		return comp_iterator(std::move(iters));
 	}
 
-	std::function<Shape::opt_type()> shp::CompositeShape::genFunc() const {
+	std::function<Shape::opt_type()> CompositeShape::genFunc() const {
 		return[it = composite(), end_it = comp_iterator()]() mutable->opt_type {
 			if (it == end_it)
 				return std::nullopt;
 			return *it++;
 		};
+	}
+
+	CompositeShape Polyline::materialize() const {
+		CompositeShape ret{};
+
+		for (uint32_t i = 1; i < pts.size(); ++i) {
+			ret.addShape(Line(
+				pts[i - 1].rotated(rotation).round<int32_t>(),
+				pts[i].rotated(rotation).round<int32_t>()
+			));
+		}
+
+		return ret;
+	}
+
+	std::function<Shape::opt_type()> Polyline::genFunc() const {
+		return[lines = materialize(), it = iterator(), end_it = iterator(), rdy = false]() mutable->opt_type {
+			if (!rdy) {
+				it = lines.begin();
+				rdy = true;
+			}
+			if (it == end_it)
+				return std::nullopt;
+			return *it++;
+		};
+	}
+
+	CompositeShape Polygon::materialize() const {
+		CompositeShape ret = Polyline::materialize();
+		ret.addShape(Line(
+			pts.front().rotated(rotation).round<int32_t>(),
+			pts.back().rotated(rotation).round<int32_t>()
+		));
+		return ret;
+	}
+
+	bool FilledPolygon::evenOddRule(int32_t x, int32_t y, bool include_border) {
+		bool ret = false;
+
+		for (int32_t i = 0, j = (int32_t)pts.size() - 1; i < (int32_t)pts.size(); j = i++) {
+			if (x == pts[i].x && y == pts[i].y)
+				return include_border;
+			if ((pts[i].y > y) ^ (pts[j].y > y)) {
+				const int32_t slope =
+					(x - pts[i].x) * (pts[j].y - pts[i].y) -
+					(y - pts[i].y) * (pts[j].x - pts[i].x);
+				if (slope == 0)
+					return include_border;
+				if ((slope < 0) ^ (pts[j].y < pts[i].y))
+					ret = !ret;
+			}
+		}
+
+		return ret;
 	}
 }

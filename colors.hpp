@@ -2,6 +2,10 @@
 #include "byte.hpp"
 #include "common.hpp"
 #include <vector>
+#include <iostream>
+
+// get lost
+#pragma warning (disable: 4250)
 
 namespace bmp {
 	struct Color {
@@ -74,64 +78,83 @@ namespace bmp {
 	};
 
 	class Gradient : public ColorProvider {
+	public:
+		struct Vect {
+			int32_t x, y, dx, dy;
+			inline double len() const { return std::sqrt(dx * dx + dy * dy); }
+			inline double angle() const { return std::atan2(dy, dx); }
+		};
 	protected:
 		std::vector<Color> colors;
-		int32_t x, y, dx, dy;
-	public:
-		Gradient(std::vector<Color> &&colors, int32_t x, int32_t y, int32_t dx, int32_t dy) :
-			colors(colors), x(x), y(y), dx(dx), dy(dy) {}
-	};
-
-	class ShapedGradient : public Gradient {
-	protected:
+		Vect vect{};
 		double unit_dist = 0;
+		uint8_t step = 1;
 	public:
-		ShapedGradient(std::vector<Color> &&colors,
-			int32_t x, int32_t y, int32_t dx, int32_t dy) :
-			Gradient(std::move(colors), x, y, dx, dy) {}
+		Gradient(std::vector<Color> &&colors, const Vect &vect,	double mult, uint8_t step) :
+			colors(colors), vect(vect), unit_dist(vect.len() * mult), step(step) {}
 	protected:
 		virtual double dist(int32_t xp, int32_t yp) const = 0;
+		Color binaryGet(int32_t x, int32_t y) const;
+		Color contGet(int32_t x, int32_t y) const;
 	};
 
-	class LinearGradient : public ShapedGradient {
+	class LinearGradient : public Gradient {
 	public:
-		LinearGradient(std::vector<Color> &&colors,
-			int32_t x, int32_t y, int32_t dx, int32_t dy) :
-			ShapedGradient(std::move(colors), x, y, dx, dy)	{
-			unit_dist = dist(x + dx, y + dy);
-		}
+		LinearGradient(std::vector<Color> &&colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			Gradient(std::move(colors), vect, mult, step) {}
 	protected:
 		virtual double dist(int32_t xp, int32_t yp) const override;
 	};
 
-	class RadialGradient : public ShapedGradient {
+	class RadialGradient : public Gradient {
 	public:
-		RadialGradient(std::vector<Color> &&colors,
-			int32_t x, int32_t y, int32_t dx, int32_t dy) :
-			ShapedGradient(std::move(colors), x, y, dx, dy) {
-			unit_dist = dist(x + dx, y + dy);
-		}
+		RadialGradient(std::vector<Color> &&colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			Gradient(std::move(colors), vect, mult, step) {}
 	protected:
 		virtual double dist(int32_t xp, int32_t yp) const override;
 	};
 
-	class ConicalGradient : public ShapedGradient {
+	class ConicalGradient : public Gradient {
 	public:
-		ConicalGradient(std::vector<Color> &&colors,
-			int32_t x, int32_t y, int32_t dx, int32_t dy) :
-			ShapedGradient(std::move(colors), x, y, dx, dy) {
-			unit_dist = dist(x + dx, y + dy);
-		}
+		ConicalGradient(std::vector<Color> &&colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			Gradient(std::move(colors), vect, 1 / mult, step) {}
 	protected:
 		virtual double dist(int32_t xp, int32_t yp) const override;
 	};
 
 	class BinaryLinearGradient : public LinearGradient {
 	public:
-		BinaryLinearGradient(std::vector<Color> &&colors,
-			int32_t x, int32_t y, int32_t dx, int32_t dy) :
-			LinearGradient(std::move(colors), x, y, dx, dy) {}
+		BinaryLinearGradient(std::vector<Color> &&colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			LinearGradient(std::move(colors), vect, mult, step) {}
 
-		virtual Color get(int32_t x, int32_t y) const override;
+		virtual inline Color get(int32_t xp, int32_t yp) const override {
+			return binaryGet(xp, yp);
+		}
+	};
+
+	class BinaryRadialGradient : public RadialGradient {
+	public:
+		BinaryRadialGradient(std::vector<Color> &&colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			RadialGradient(std::move(colors), vect, mult, step) {}
+
+		virtual inline Color get(int32_t xp, int32_t yp) const override {
+			return binaryGet(xp, yp);
+		}
+	};
+
+	class BinaryConicalGradient : public ConicalGradient {
+	public:
+		BinaryConicalGradient(std::vector<Color> &&colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			ConicalGradient(std::move(colors), vect, mult, step) {}
+
+		virtual inline Color get(int32_t xp, int32_t yp) const override {
+			return binaryGet(xp, yp);
+		}
 	};
 }

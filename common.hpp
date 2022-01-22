@@ -7,8 +7,6 @@ constexpr inline static double tau = 6.28318530718;
 constexpr inline static double pi = 3.14159265359;
 
 constexpr inline int8_t sgn(int32_t x) { return (x > 0) - (x < 0); }
-inline int32_t rnd(double d) { return static_cast<int32_t>(std::round(d)); }
-
 
 template <typename T>
 class GeneratorIterator {
@@ -64,11 +62,13 @@ private:
 public:
 	CompositeIterator() = default;
 	CompositeIterator(std::vector<IterPair> &&itervec) : iters(itervec) {
+		done = false;
 		operator++();
 	}
 	CompositeIterator(std::initializer_list<IterPair> iterlist) {
 		for (const auto &pair : iterlist)
 			iters.push_back(pair);
+		done = false;
 		operator++();
 	}
 

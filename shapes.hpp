@@ -12,9 +12,10 @@ namespace shp {
 		using base_type = Pos<int32_t>;
 		using iterator = GeneratorIterator<base_type>;
 		using opt_type = iterator::optional;
+		using interm_type = Pos<double>;
 				
-		virtual inline iterator begin() const { return iterator(genFunc()); };
-		virtual inline iterator end() const { return iterator(); }
+		inline iterator begin() const { return iterator(genFunc()); };
+		inline iterator end() const { return iterator(); }
 		virtual std::unique_ptr<Shape> copy() const = 0;
 
 		inline Shape &translate(int32_t dx, int32_t dy) {
@@ -34,24 +35,32 @@ namespace shp {
 		virtual std::function<opt_type()> genFunc() const = 0;
 	};
 
+	class Rotatable {
+	protected:
+		double rotation;
+	public:
+		Rotatable() : rotation(0.) {}
+		Rotatable(double rotation) : rotation(rotation) {}
+
+		inline void rotate(double angle) { rotation += angle; }
+	};
+
 	class RectBase : public Shape {
 	protected:
 		int32_t dx, dy;
-		double rotation;
 	public:
-		RectBase(int32_t x, int32_t y, int32_t w, int32_t h, double rotation = 0.) :
-			Shape(x, y), dx(w), dy(h), rotation(rotation) {}
+		RectBase(int32_t x, int32_t y, int32_t w, int32_t h) :
+			Shape(x, y), dx(w), dy(h) {}
 		RectBase(base_type p0, base_type p1) :
 			RectBase(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y) {}
 	};
 
-	class EllipseBase : public Shape {
+	class EllipseBase : public Shape, public Rotatable {
 	protected:
 		int32_t rx, ry;
-		double rotation;
 	public:
 		EllipseBase(int32_t x, int32_t y, int32_t rx, int32_t ry, double rotation = 0.) :
-			Shape(x, y), rx(rx), ry(ry), rotation(rotation) {}
+			Shape(x, y), Rotatable(rotation), rx(rx), ry(ry) {}
 	};
 
 	class CircleBase : public Shape {
@@ -59,6 +68,14 @@ namespace shp {
 		int32_t r;
 	public:
 		CircleBase(int32_t x, int32_t y, int32_t r) : Shape(x, y), r(r) {}
+	};
+
+	class PolyBase : public Shape, public Rotatable {
+	protected:
+		std::vector<interm_type> pts{};
+	public:
+		PolyBase(const std::vector<interm_type> &pts) :
+			Shape(), Rotatable(), pts(pts) {}
 	};
 
 	class SimpleLine : public Shape {
@@ -85,6 +102,30 @@ namespace shp {
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Line>(*this);
+		}
+	private:
+		std::function<opt_type()> genFunc() const override;
+	};
+
+	class Rectangle : public RectBase {
+	public:
+		Rectangle(int32_t x, int32_t y, int32_t w, int32_t h) :
+			RectBase(x, y, w, h) {}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<Rectangle>(*this);
+		}
+	private:
+		std::function<opt_type()> genFunc() const override;
+	};
+	
+	class FilledRectangle : public RectBase {
+	public:
+		FilledRectangle(int32_t x, int32_t y, int32_t w, int32_t h) :
+			RectBase(x, y, w, h) {}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<FilledRectangle>(*this);
 		}
 	private:
 		std::function<opt_type()> genFunc() const override;
@@ -202,16 +243,40 @@ namespace shp {
 		std::function<opt_type()> genFunc() const override;
 	};
 
-	class Polyline : public CompositeShape {
+	class Polyline : public PolyBase {
 	public:
-		Polyline(const std::vector<base_type> &pts) {
-			for (uint32_t i = 1; i < pts.size(); ++i)
-				addShape(Line(pts[i - 1], pts[i]));
-		}
+		Polyline(const std::vector<interm_type> &pts) : PolyBase(pts) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polyline>(*this);
 		}
+
+		virtual CompositeShape materialize() const;
+	private:
+		std::function<opt_type()> genFunc() const override;
+	};
+	
+	class Polygon : public Polyline {
+	public:
+		Polygon(const std::vector<interm_type> &pts) : Polyline(pts) {}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<Polygon>(*this);
+		}
+
+		virtual CompositeShape materialize() const override;
+	};	
+
+	class FilledPolygon : public PolyBase {
+	public:
+		FilledPolygon(const std::vector<interm_type> &pts) : PolyBase(pts) {}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<Polygon>(*this);
+		}
+	private:
+		std::function<opt_type()> genFunc() const override;
+		bool evenOddRule(int32_t x, int32_t y, bool include_border = false);
 	};
 }
 

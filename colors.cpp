@@ -29,30 +29,33 @@ namespace bmp {
 		}
 	}
 
+	// distance from point to line
+	// d(P(xp, yp), (Ax + By + C = 0)) = |A*xp + B*yp + C| / sqrt(A*A + B*B)
 	double LinearGradient::dist(int32_t xp, int32_t yp) const	{
-		static const double denom = std::sqrt(dx * dx + dy * dy);
-		static const int32_t c = -(dx * x + dy * y);
-		return std::abs(dx * xp + dy * yp + c) / denom;
+		static const double div = 1 / vect.len();
+		static const int32_t c = -(vect.dx * vect.x + vect.dy * vect.y);
+		return std::abs(vect.dx * xp + vect.dy * yp + c) * div;
 	}
 
 	double RadialGradient::dist(int32_t xp, int32_t yp) const {
-		const int32_t xdif = x - xp, ydif = y - yp;
+		const int32_t xdif = vect.x - xp, ydif = vect.y - yp;
 		return std::sqrt(xdif * xdif + ydif * ydif);
 	}
 
 	double ConicalGradient::dist(int32_t xp, int32_t yp) const	{
-		static const double base = std::atan2(dy, dx);
-		double ret = std::atan2(yp, xp) - base;
+		static const double base = vect.angle();
+		double ret = std::atan2(yp - vect.y, xp - vect.x) - base;
 		if (ret < 0)
 			ret += tau;
 		return ret;
 	}
 
-	Color BinaryLinearGradient::get(int32_t xp, int32_t yp) const {
+	Color Gradient::binaryGet(int32_t xp, int32_t yp) const {
 		const uint32_t
-			mult = rnd(dist(xp, yp) / unit_dist),
+			mult = rnd(dist(xp, yp) / unit_dist) * step,
 			index = mult / degree_cnt,
 			deg = mult % degree_cnt;
+
 		if (index >= colors.size() - 1)
 			return colors.back();
 		return colors[index + getShade(xp, yp, deg)];

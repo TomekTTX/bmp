@@ -2,6 +2,8 @@
 #include <array>
 #include <cmath>
 
+inline int32_t rnd(double d) { return static_cast<int32_t>(std::round(d)); }
+
 template <typename T>
 struct Pos {
 	T x, y;
@@ -44,6 +46,13 @@ struct Pos {
 	}
 	Pos rotated(double sina, double cosa) const {
 		return { x * cosa + y * sina, -x * sina + y * cosa };
+	}
+	template <typename T>
+	Pos<T> round() const {
+		return { 
+			static_cast<T>(rnd(x)),
+			static_cast<T>(rnd(y)),
+		};
 	}
 
 	double distance2(const Pos &other) const {

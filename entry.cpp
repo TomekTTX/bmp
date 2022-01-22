@@ -19,16 +19,14 @@ void drawGear(BMP &bmp) {
 }
 
 int main() {
-	BMP bmp{ 1000,1000 };
-	BinaryLinearGradient grad{
-		{colors::red, colors::orange, colors::yellow, colors::green, colors::cyan, colors::blue, colors::purple } ,
-		160, 160, 8, 8};
-	shp::FilledCircle circ{ 500,500,499 };
-	
-	bmp.drawShape(circ, grad);
+	bmp::BMP bmp{ 1000,1000 };
+	shp::Polygon pl{ {{10,10},{50,70},{20,40},{80,30},{0,100}} };
+	bmp::BinaryConicalGradient grad{
+		{colors::red, colors::orange, colors::yellow, colors::green,
+		colors::cyan, colors::blue, colors::purple, colors::magenta, colors::red},
+		{50, 50, -1, -1}, 27 };
 
-	//for (int32_t i = 0; i < 15; ++i)
-	//	bmp.drawGradient(30 * i, 0, 30, 30, colors::black, 0xDDDDDD, i);
+	bmp.drawShape(pl, grad);
 
 	bmp.writeTo("test.bmp");
 	return 0;
