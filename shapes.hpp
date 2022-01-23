@@ -105,6 +105,7 @@ namespace shp {
 	public:
 		PolyBase(const std::vector<interm_type> &pts) :
 			Shape(), Rotatable(), pts(pts) {}
+		PolyBase(int32_t x, int32_t y, int32_t radius, int32_t sides);
 
 		inline void rotate(double rotation) override {
 			Rotatable::rotate(rotation);
@@ -288,6 +289,8 @@ namespace shp {
 	class Polyline : public PolyBase {
 	public:
 		Polyline(const std::vector<interm_type> &pts) : PolyBase(pts) {}
+		Polyline(int32_t x, int32_t y, int32_t radius, int32_t sides) :
+			PolyBase(x, y, radius, sides) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polyline>(*this);
@@ -301,6 +304,8 @@ namespace shp {
 	class Polygon : public Polyline {
 	public:
 		Polygon(const std::vector<interm_type> &pts) : Polyline(pts) {}
+		Polygon(int32_t x, int32_t y, int32_t radius, int32_t sides) :
+			Polyline(x, y, radius, sides) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polygon>(*this);
@@ -312,6 +317,8 @@ namespace shp {
 	class FilledPolygon : public PolyBase {
 	public:
 		FilledPolygon(const std::vector<interm_type> &pts) : PolyBase(pts) {}
+		FilledPolygon(int32_t x, int32_t y, int32_t radius, int32_t sides) :
+			PolyBase(x, y, radius, sides) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<FilledPolygon>(*this);

@@ -248,4 +248,15 @@ namespace shp {
 		};
 
 	}
+
+	PolyBase::PolyBase(int32_t x, int32_t y, int32_t radius, int32_t sides) :
+		Shape(), pts() {
+		const double
+			angle_inc = tau / sides,
+			angle_init = (pi - angle_inc) / 2;
+
+		pts.reserve(sides);
+		for (double angle = angle_init; sides--; angle += angle_inc)
+			pts.emplace_back(x + radius * cos(angle), y + radius * sin(angle));
+	}
 }

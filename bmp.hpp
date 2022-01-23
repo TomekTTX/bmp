@@ -68,7 +68,6 @@ namespace bmp {
 		Poly& wrap(uint32_t times);
 		Poly wrapped(uint32_t times) const;
 
-
 		static Poly regular(int32_t x, int32_t y, int32_t r, uint32_t deg, double angle_base = 0.);
 		static Poly interleaveMany(const std::vector<Poly> &poly_list);
 	};
