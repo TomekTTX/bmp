@@ -513,6 +513,11 @@ namespace bmp {
 		return *this;
 	}
 
+	Surface::Surface(std::size_t width, std::size_t height) : w(width), h(height) {
+		color_space = Matrix<Color>(h, w, colors::black);
+		transparency = Matrix<bool>(h, w, true);
+	}
+
 	Poly Poly::interleaved(const Poly &other, uint32_t skip_count) const {
 		Poly ret = *this;
 		return ret.interleave(other, skip_count);

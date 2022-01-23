@@ -137,6 +137,13 @@ namespace shp {
 		};
 	}
 
+	Shape::Boundary CompositeShape::boundingRect() const {
+		Boundary ret{};
+		for (const auto &p : components)
+			ret |= p->boundingRect();
+		return ret;
+	}
+
 	CompositeShape::comp_iterator CompositeShape::composite() const {
 		std::vector<comp_iterator::IterPair> iters;
 		for (auto &comp : components)
@@ -223,15 +230,15 @@ namespace shp {
 		return ret;
 	}
 
-	PolyBase::Boundary PolyBase::boundingRect() const {
+	Shape::Boundary Shape::pointSeqBoundary(const interm_type *data, std::size_t cnt) {
 		double
 			xm = +INFINITY, xM = -INFINITY,
 			ym = +INFINITY, yM = -INFINITY;
-		for (const auto &p : pts) {
-			xm = std::min(xm, p.x);
-			ym = std::min(ym, p.y);
-			xM = std::max(xM, p.x);
-			yM = std::max(yM, p.y);
+		for (std::size_t i = 0; i < cnt; ++i) {
+			xm = std::min(xm, data[i].x);
+			ym = std::min(ym, data[i].y);
+			xM = std::max(xM, data[i].x);
+			yM = std::max(yM, data[i].y);
 		}
 		return {
 			static_cast<int32_t>(xm),
@@ -239,5 +246,6 @@ namespace shp {
 			static_cast<int32_t>(std::ceil(xM)),
 			static_cast<int32_t>(std::ceil(yM)),
 		};
+
 	}
 }

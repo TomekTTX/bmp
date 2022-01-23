@@ -24,11 +24,7 @@ namespace bmp {
 			!(x % 8 == 1 && y % 8 == 5) &&
 			!(x % 8 == 5 && y % 8 == 1);
 		case 7: return
-			(x % 2 == y % 2);
-		//case 8: return
-		//	(x % 2 == y % 2) ||
-		//	(x % 8 == 2 && y % 8 == 5) ||
-		//	(x % 8 == 6 && y % 8 == 1);				
+			(x % 2 == y % 2);		
 		default: return !getShade(x + 1, y, 14 - degree);
 		}
 	}
@@ -90,10 +86,9 @@ namespace bmp {
 	}
 
 	Color Gradient::get(int32_t xp, int32_t yp) const {
-		const double distance = dist(xp, yp) / unit_dist;
-		if (binary_blend)
-			return binaryGet(xp, yp, distance);
-		return blendGet(xp, yp, distance);
+		return binary_blend ?
+			binaryGet(xp, yp, dist(xp, yp) / unit_dist) :
+			blendGet(xp, yp, dist(xp, yp) / unit_dist);
 	}
 
 	inline double transform(double a, double b, double degree = 1.) {

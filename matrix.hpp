@@ -38,6 +38,8 @@ public:
 		return content_[row * cols_ + col];
 	}
 
+	// This is invalid for Matrix<bool>
+	// Use Matrix::operator[] instead for modifying bools
 	inline T &operator()(size_t row, size_t col) {
 		return content_[row * cols_ + col];
 	}

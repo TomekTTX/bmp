@@ -73,6 +73,38 @@ namespace bmp {
 		static Poly interleaveMany(const std::vector<Poly> &poly_list);
 	};
 
+	class Surface {
+	private:
+		std::size_t w, h;
+		Matrix<Color> color_space;
+		Matrix<bool> transparency;
+	public:
+		Surface(std::size_t width, std::size_t height);
+
+		inline void set(std::size_t x, std::size_t y, Color color) {
+			color_space(y, x) = color;
+			transparency[y][x] = false;
+		}
+		
+		inline void reset(std::size_t x, std::size_t y) {
+			transparency[y][x] = true;
+		}
+
+		inline void clear() {
+			std::fill(transparency.begin(), transparency.end(), true);
+		}
+
+		inline bool hasColor(std::size_t x, std::size_t y) const {
+			return !transparency[y][x];
+		}
+
+		inline std::optional<Color> operator()(std::size_t x, std::size_t y) const {
+			if (transparency[y][x])
+				return std::nullopt;
+			return color_space(y, x);
+		}
+	};
+
 	class BMP {
 	private:
 		BitmapFileHeader bfh;
@@ -92,8 +124,8 @@ namespace bmp {
 		inline uint32_t height() const { return bih.biHeight; }
 		inline Color bgcolor() const { return bgColor; }
 
-		inline Color pixel(int32_t x, int32_t y) const { return color_space[invY(y)][x]; }
-		inline Color &pixel(int32_t x, int32_t y) { return color_space[invY(y)][x]; }
+		inline Color pixel(int32_t x, int32_t y) const { return color_space(invY(y), x); }
+		inline Color &pixel(int32_t x, int32_t y) { return color_space(invY(y), x); }
 		inline void drawPixel(int32_t x, int32_t y, Color color) { pixel(x, y) = color; }
 		inline void drawPixel(int32_t x, int32_t y, const ColorProvider &cp) { pixel(x, y) = cp.get(x, y); }
 		inline void drawPixelRound(double x, double y, Color color) {

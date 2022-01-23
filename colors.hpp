@@ -1,18 +1,13 @@
 #pragma once
-#include "byte.hpp"
 #include "common.hpp"
 #include <vector>
 #include <iostream>
-
-// get lost
-#pragma warning (disable: 4250)
 
 namespace bmp {
 	struct Color {
 		uint8_t r, g, b;
 
 		inline constexpr Color() : r(0), g(0), b(0) {};
-		//inline constexpr Color(ubyte_t r, ubyte_t g, ubyte_t b) : r(r), g(g), b(b) {}
 		inline constexpr Color(uint32_t r, uint32_t g, uint32_t b) : r(r), g(g), b(b) {}
 		inline constexpr Color(uint32_t rgb) :
 			r((rgb >> 16) & 0xFF), g((rgb >> 8) & 0xFF), b((rgb) & 0xFF) {}
@@ -102,7 +97,7 @@ namespace bmp {
 
 		inline void translate(int32_t x, int32_t y) { vect.x += x, vect.y += y; }
 		inline void setVect(const Vect &newVect) { vect = newVect; }
-		inline void setBlendMode(double mode) { blend_mode = mode, binary_blend = false; }
+		inline void setBlendMode(double mode = 1.) { blend_mode = mode, binary_blend = false; }
 		inline void setBinaryMode() { binary_blend = true; }
 		void setRepeating(bool value = true);
 	protected:
@@ -147,42 +142,7 @@ namespace bmp {
 		virtual double dist(int32_t xp, int32_t yp) const override;
 	};
 
-	class FunctionalGradient : public Gradient {
-
-	};
-
-	/*
-	class BinaryLinearGradient : public LinearGradient {
-	public:
-		BinaryLinearGradient(std::vector<Color> &&colors, const Vect &vect,
-			double mult = 1., uint8_t step = 1) :
-			LinearGradient(std::move(colors), vect, mult, step) {}
-
-		//virtual inline Color get(int32_t xp, int32_t yp) const override {
-		//	return binaryGet(xp, yp);
-		//}
-	};
-
-	class BinaryRadialGradient : public RadialGradient {
-	public:
-		BinaryRadialGradient(std::vector<Color> &&colors, const Vect &vect,
-			double mult = 1., uint8_t step = 1) :
-			RadialGradient(std::move(colors), vect, mult, step) {}
-
-		//virtual inline Color get(int32_t xp, int32_t yp) const override {
-		//	return binaryGet(xp, yp);
-		//}
-	};
-
-	class BinaryConicalGradient : public ConicalGradient {
-	public:
-		BinaryConicalGradient(std::vector<Color> &&colors, const Vect &vect,
-			double mult = 1., uint8_t step = 1) :
-			ConicalGradient(std::move(colors), vect, mult, step) {}
-
-		//virtual inline Color get(int32_t xp, int32_t yp) const override {
-		//	return binaryGet(xp, yp);
-		//}
-	};
-	*/
+	//class FunctionalGradient : public Gradient {
+	//
+	//};
 }
