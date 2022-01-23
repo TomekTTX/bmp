@@ -19,14 +19,21 @@ void drawGear(BMP &bmp) {
 }
 
 int main() {
-	bmp::BMP bmp{ 1000,1000 };
-	shp::Polygon pl{ {{10,10},{50,70},{20,40},{80,30},{0,100}} };
-	bmp::BinaryConicalGradient grad{
+	bmp::BMP bmp{ 801,801 };
+	shp::FilledRectangle poly1{ 0,0,800,50 };
+	shp::FilledRectangle poly2{ 0,50,800,50 };
+	shp::FilledCircle circle{ 400,400,400 };
+	bmp::LinearGradient grad1{
 		{colors::red, colors::orange, colors::yellow, colors::green,
-		colors::cyan, colors::blue, colors::purple, colors::magenta, colors::red},
-		{50, 50, -1, -1}, 27 };
+		colors::cyan, colors::blue, colors::purple, colors::magenta},
+		{ 400,400,0,-1 }, 19 };
+	bmp::RadialGradient grad2{ {-1,0},{400,400,4,0}, 8 };
 
-	bmp.drawShape(pl, grad);
+	//grad1.setRepeating();
+	//grad1.setBlendMode(1);
+	grad2.setBlendMode(1);
+	bmp.drawShape(circle, grad2);
+
 
 	bmp.writeTo("test.bmp");
 	return 0;
@@ -34,6 +41,25 @@ int main() {
 
 
 /*
+* 
+* 
+	class Surface {
+	private:
+		Matrix<Color> color_space;
+		Matrix<bool> transparency;
+	public:
+		Surface(std::size_t width, std::size_t height);
+
+		inline bool 
+
+		inline Matrix<Color>::const_iterator operator[](std::size_t index) const {
+			return color_space[index];
+		}
+
+		inline Matrix<Color>::iterator operator[](std::size_t index) {
+			return color_space[index];
+		}
+	};
 
 	const Poly penta = Poly::regular(100, 100, 100, 5).rearranged({0,3,1,4,2});
 

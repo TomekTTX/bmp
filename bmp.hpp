@@ -84,7 +84,6 @@ namespace bmp {
 		using BezierArrayQuadr = std::array<Pos<double>, 3>;
 		using BezierArrayCubic = std::array<Pos<double>, 4>;
 		using ParamFunc = std::function<double(double)>;
-		//struct Gradient { Color primary, secondary; uint8_t degree; };
 
 		BMP(std::istream &ist, Color bgColor = colors::white);
 		BMP(std::size_t width, std::size_t height, Color bgColor = colors::white);

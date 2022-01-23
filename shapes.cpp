@@ -104,13 +104,12 @@ namespace shp {
 	}
 
 	std::function<Shape::opt_type()> FilledEllipse::genFunc() const {
-		const double sinr = sin(rotation), cosr = cos(rotation);
+		const double sinr = -sin(rotation), cosr = cos(rotation);
 		const int32_t limit = std::max(rx, ry);
 		return[this, sinr, cosr, limit, xp = -limit, yp = -limit]() mutable->opt_type {
 			while (yp <= limit) {
 				while (xp <= limit) {
 					const double xr = xp * cosr + yp * sinr, yr = yp * cosr - xp * sinr;
-
 					if (xr * xr / rx / rx + yr * yr / ry / ry <= 1)
 						return base_type(xp++ + x, yp + y);
 					xp++;
@@ -187,23 +186,58 @@ namespace shp {
 		return ret;
 	}
 
-	bool FilledPolygon::evenOddRule(int32_t x, int32_t y, bool include_border) {
+	std::function<Shape::opt_type()> FilledPolygon::genFunc() const {
+		Boundary br = boundingRect();
+		return[this, br, xp = br.xm, yp = br.ym]() mutable->opt_type {
+			while (yp <= br.yM) {
+				while (xp <= br.xM) {
+					if (evenOddRule(xp, yp))
+						return base_type(x + xp++, y + yp);
+					xp++;
+				}
+				xp = br.xm;
+				yp++;
+			}
+			return std::nullopt;
+		};
+	}
+
+	bool FilledPolygon::evenOddRule(int32_t x, int32_t y, bool include_border) const {
 		bool ret = false;
 
 		for (int32_t i = 0, j = (int32_t)pts.size() - 1; i < (int32_t)pts.size(); j = i++) {
-			if (x == pts[i].x && y == pts[i].y)
+			const auto pti = pts[i].round<int32_t>(), ptj = pts[j].round<int32_t>();
+			if (x == pti.x && y == pti.y)
 				return include_border;
-			if ((pts[i].y > y) ^ (pts[j].y > y)) {
+			if ((pti.y > y) ^ (ptj.y > y)) {
 				const int32_t slope =
-					(x - pts[i].x) * (pts[j].y - pts[i].y) -
-					(y - pts[i].y) * (pts[j].x - pts[i].x);
+					(x - pti.x) * (ptj.y - pti.y) -
+					(y - pti.y) * (ptj.x - pti.x);
 				if (slope == 0)
 					return include_border;
-				if ((slope < 0) ^ (pts[j].y < pts[i].y))
+				if ((slope < 0) ^ (ptj.y < pti.y))
 					ret = !ret;
 			}
 		}
 
 		return ret;
+	}
+
+	PolyBase::Boundary PolyBase::boundingRect() const {
+		double
+			xm = +INFINITY, xM = -INFINITY,
+			ym = +INFINITY, yM = -INFINITY;
+		for (const auto &p : pts) {
+			xm = std::min(xm, p.x);
+			ym = std::min(ym, p.y);
+			xM = std::max(xM, p.x);
+			yM = std::max(yM, p.y);
+		}
+		return {
+			static_cast<int32_t>(xm),
+			static_cast<int32_t>(ym),
+			static_cast<int32_t>(std::ceil(xM)),
+			static_cast<int32_t>(std::ceil(yM)),
+		};
 	}
 }

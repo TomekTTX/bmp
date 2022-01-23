@@ -7,6 +7,18 @@ constexpr inline static double tau = 6.28318530718;
 constexpr inline static double pi = 3.14159265359;
 
 constexpr inline int8_t sgn(int32_t x) { return (x > 0) - (x < 0); }
+constexpr inline int32_t ipow(int32_t base, uint8_t exp) {
+	int32_t ret = 1;
+
+	while (exp) {
+		if (exp & 1)
+			ret *= base;
+		base *= base;
+		exp >>= 1;
+	}
+
+	return ret;
+}
 
 template <typename T>
 class GeneratorIterator {

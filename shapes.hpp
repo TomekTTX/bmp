@@ -5,6 +5,8 @@
 #include <memory>
 #include "common.hpp"
 
+#include <iostream>
+
 namespace shp {
 
 	class Shape {
@@ -42,7 +44,7 @@ namespace shp {
 		Rotatable() : rotation(0.) {}
 		Rotatable(double rotation) : rotation(rotation) {}
 
-		inline void rotate(double angle) { rotation += angle; }
+		inline virtual void rotate(double angle) { rotation += angle; }
 	};
 
 	class RectBase : public Shape {
@@ -73,9 +75,18 @@ namespace shp {
 	class PolyBase : public Shape, public Rotatable {
 	protected:
 		std::vector<interm_type> pts{};
+		struct Boundary { int32_t xm, ym, xM, yM; };
 	public:
 		PolyBase(const std::vector<interm_type> &pts) :
 			Shape(), Rotatable(), pts(pts) {}
+
+		inline void rotate(double rotation) override {
+			Rotatable::rotate(rotation);
+			for (auto &p : pts)
+				p = p.rotated(rotation);
+		}
+
+		Boundary boundingRect() const;
 	};
 
 	class SimpleLine : public Shape {
@@ -192,23 +203,6 @@ namespace shp {
 		std::function<opt_type()> genFunc() const override;
 	};
 
-	template <std::size_t N>
-	class BezierCurve : public Shape {
-	private:
-		std::array<base_type, N> pts;
-	public:
-		BezierCurve(std::array<base_type, N> &&pts) : pts(pts) {}
-		BezierCurve(const std::vector<base_type> &vec) {
-			std::copy(vec.begin(), vec.begin() + N, pts.begin());
-		}
-
-		std::unique_ptr<Shape> copy() const override {
-			return std::make_unique<BezierCurve>(*this);
-		}
-	private:
-		std::function<opt_type()> genFunc() const override;
-	};
-
 	class CompositeShape : public Shape {
 	public:
 		using comp_iterator = CompositeIterator<Shape::iterator>;
@@ -272,12 +266,67 @@ namespace shp {
 		FilledPolygon(const std::vector<interm_type> &pts) : PolyBase(pts) {}
 
 		std::unique_ptr<Shape> copy() const override {
-			return std::make_unique<Polygon>(*this);
+			return std::make_unique<FilledPolygon>(*this);
 		}
 	private:
 		std::function<opt_type()> genFunc() const override;
-		bool evenOddRule(int32_t x, int32_t y, bool include_border = false);
+		bool evenOddRule(int32_t x, int32_t y, bool include_border = false) const;
 	};
+
+
+	template <std::size_t N>
+	class BezierCurve : public Shape {
+	private:
+		std::array<interm_type, N + 1> pts;
+		std::array<int32_t, N + 1> coeffs = getCoeffs();
+		double maxdist;
+	public:
+		BezierCurve(std::array<interm_type, N + 1> &&pts) : pts(pts) {
+			initMaxDist();
+		}
+		BezierCurve(const std::vector<interm_type> &vec) {
+			std::copy(vec.begin(), vec.begin() + N + 1, pts.begin());
+			initMaxDist();
+		}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<BezierCurve>(*this);
+		}
+	private:
+		std::function<opt_type()> genFunc() const override {
+			const double step = .125 / maxdist;
+			return[this, step, t = -step]() mutable->opt_type {
+				if ((t += step) > 1)
+					return std::nullopt;
+				if (t == 0.)
+					return pts.front().round<int32_t>();
+				if (t == 1.)
+					return pts.back().round<int32_t>();
+
+				interm_type point{ 0,0 };
+				for (std::size_t i = 0; i <= N; ++i) {
+					const double mult = std::pow(t, i) * std::pow(1 - t, N - i) * coeffs[i];
+					point += pts[i] * mult;
+				}
+
+				return point.round<int32_t>();
+			};
+		}
+
+		void initMaxDist() {
+			for (std::size_t i = 1; i < N + 1; ++i)
+				maxdist = std::max(maxdist, pts[i - 1].dist(pts[i]));
+		}
+
+		static constexpr std::array<int32_t, N + 1> getCoeffs() {
+			std::array<int32_t, N + 1> ret{};
+			ret[0] = 1;
+			for (int32_t k = 1; k < N + 1; ++k)
+				ret[k] = ret[k - 1] * (N + 1 - k) / k;
+			return ret;
+		}
+	};
+
 }
 
 //class CompoundShape {

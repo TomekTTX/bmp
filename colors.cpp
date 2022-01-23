@@ -25,39 +25,88 @@ namespace bmp {
 			!(x % 8 == 5 && y % 8 == 1);
 		case 7: return
 			(x % 2 == y % 2);
-		default: return !getShade(x, y, 14 - degree);
+		//case 8: return
+		//	(x % 2 == y % 2) ||
+		//	(x % 8 == 2 && y % 8 == 5) ||
+		//	(x % 8 == 6 && y % 8 == 1);				
+		default: return !getShade(x + 1, y, 14 - degree);
 		}
 	}
 
 	// distance from point to line
 	// d(P(xp, yp), (Ax + By + C = 0)) = |A*xp + B*yp + C| / sqrt(A*A + B*B)
-	double LinearGradient::dist(int32_t xp, int32_t yp) const	{
-		static const double div = 1 / vect.len();
-		static const int32_t c = -(vect.dx * vect.x + vect.dy * vect.y);
+	double LinearGradient::dist(int32_t xp, int32_t yp) const {
 		return std::abs(vect.dx * xp + vect.dy * yp + c) * div;
 	}
 
+	// cartesian distance
 	double RadialGradient::dist(int32_t xp, int32_t yp) const {
 		const int32_t xdif = vect.x - xp, ydif = vect.y - yp;
 		return std::sqrt(xdif * xdif + ydif * ydif);
 	}
 
-	double ConicalGradient::dist(int32_t xp, int32_t yp) const	{
-		static const double base = vect.angle();
-		double ret = std::atan2(yp - vect.y, xp - vect.x) - base;
+	// angular distance
+	double ConicalGradient::dist(int32_t xp, int32_t yp) const {
+		double ret = std::atan2(yp - vect.y, xp - vect.x) - base_atan;
 		if (ret < 0)
 			ret += tau;
 		return ret;
 	}
 
-	Color Gradient::binaryGet(int32_t xp, int32_t yp) const {
-		const uint32_t
-			mult = rnd(dist(xp, yp) / unit_dist) * step,
-			index = mult / degree_cnt,
-			deg = mult % degree_cnt;
+	void Gradient::setRepeating(bool value)	{
+		if (value ^ repeating) {
+			if (value)
+				colors.push_back(colors.front());
+			else
+				colors.pop_back();
+			repeating = value;
+		}
+	}
 
-		if (index >= colors.size() - 1)
+	Color Gradient::binaryGet(int32_t xp, int32_t yp, double distance) const {
+		const uint32_t
+			mult = rnd(distance) * step,
+			deg = mult % degree_cnt;
+		uint32_t index = mult / degree_cnt;
+
+		if (repeating)
+			index %= (colors.size() - 1);
+		else if (index + 1 >= colors.size())
 			return colors.back();
 		return colors[index + getShade(xp, yp, deg)];
+	}
+	
+	Color Gradient::blendGet(int32_t xp, int32_t yp, double distance) const {
+		const double
+			mult = distance * step / degree_cnt,
+			frac = std::fmod(mult, 1);
+		uint32_t index = static_cast<uint32_t>(mult);
+
+		if (repeating)
+			index %= (colors.size() - 1);
+		else if (index >= colors.size() - 1)
+			return colors.back();
+		return blend(colors[index], colors[index + 1], frac, blend_mode);
+	}
+
+	Color Gradient::get(int32_t xp, int32_t yp) const {
+		const double distance = dist(xp, yp) / unit_dist;
+		if (binary_blend)
+			return binaryGet(xp, yp, distance);
+		return blendGet(xp, yp, distance);
+	}
+
+	inline double transform(double a, double b, double degree = 1.) {
+		a = std::pow(a, degree);
+		return a / (a + std::pow(b, degree));
+	}
+
+	Color Gradient::blend(Color color1, Color color2, double frac, double blend_mode) {
+		frac = transform(frac, 1 - frac, blend_mode);
+		return Color(
+			rnd(color1.r * (1 - frac) + color2.r * frac),
+			rnd(color1.g * (1 - frac) + color2.g * frac), 
+			rnd(color1.b * (1 - frac) + color2.b * frac)
+		);
 	}
 }
