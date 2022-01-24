@@ -60,7 +60,7 @@ namespace shp {
 		Rotatable() : rotation(0.) {}
 		Rotatable(double rotation) : rotation(rotation) {}
 
-		virtual inline void rotate(double angle) { rotation += angle; }
+		virtual inline Rotatable &rotate(double angle) { rotation += angle; return *this; }
 	};
 
 	class RectBase : public Shape {
@@ -106,12 +106,11 @@ namespace shp {
 		PolyBase(const std::vector<interm_type> &pts) :
 			Shape(), Rotatable(), pts(pts) {}
 		PolyBase(int32_t x, int32_t y, int32_t radius, int32_t sides);
+		PolyBase(int32_t x, int32_t y, const std::vector<int32_t> &radii,
+			int32_t repeats);
 
-		inline void rotate(double rotation) override {
-			Rotatable::rotate(rotation);
-			for (auto &p : pts)
-				p = p.rotated(rotation);
-		}
+		virtual PolyBase &rotate(double rotation) override;
+		//virtual PolyBase &ravel(uint32_t times);
 
 		inline Boundary boundingRect() const override {
 			return pointSeqBoundary(pts.data(), pts.size());
@@ -291,6 +290,8 @@ namespace shp {
 		Polyline(const std::vector<interm_type> &pts) : PolyBase(pts) {}
 		Polyline(int32_t x, int32_t y, int32_t radius, int32_t sides) :
 			PolyBase(x, y, radius, sides) {}
+		Polyline(int32_t x, int32_t y, const std::vector<int32_t> &radii,
+			int32_t repeats) : PolyBase(x, y, radii, repeats) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polyline>(*this);
@@ -306,6 +307,8 @@ namespace shp {
 		Polygon(const std::vector<interm_type> &pts) : Polyline(pts) {}
 		Polygon(int32_t x, int32_t y, int32_t radius, int32_t sides) :
 			Polyline(x, y, radius, sides) {}
+		Polygon(int32_t x, int32_t y, const std::vector<int32_t> &radii,
+			int32_t repeats) : Polyline(x, y, radii, repeats) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polygon>(*this);
@@ -319,6 +322,8 @@ namespace shp {
 		FilledPolygon(const std::vector<interm_type> &pts) : PolyBase(pts) {}
 		FilledPolygon(int32_t x, int32_t y, int32_t radius, int32_t sides) :
 			PolyBase(x, y, radius, sides) {}
+		FilledPolygon(int32_t x, int32_t y, const std::vector<int32_t> &radii,
+			int32_t repeats) : PolyBase(x, y, radii, repeats) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<FilledPolygon>(*this);

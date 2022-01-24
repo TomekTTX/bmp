@@ -16,9 +16,12 @@ namespace shp {
 	std::function<Shape::opt_type()> Line::genFunc() const {
 		const int32_t dxa = abs(dx), dya = -abs(dy);
 		const int8_t sx = sgn(dx), sy = sgn(dy);
-		return[this, dxa, dya, sx, sy, xp = 0, yp = 0, err = dxa + dya]() mutable->opt_type {
-			if (xp == dx && yp == dy)
+		return[this, dxa, dya, sx, sy, xp = 0, yp = 0, err = dxa + dya,
+			endflag = false]() mutable->opt_type {
+			if (endflag)
 				return std::nullopt;
+			if (xp == dx && yp == dy)
+				endflag = true;
 			const int32_t e2 = 2 * err;
 			base_type ret = { xp + x,yp + y };
 
@@ -249,8 +252,7 @@ namespace shp {
 
 	}
 
-	PolyBase::PolyBase(int32_t x, int32_t y, int32_t radius, int32_t sides) :
-		Shape(), pts() {
+	PolyBase::PolyBase(int32_t x, int32_t y, int32_t radius, int32_t sides) {
 		const double
 			angle_inc = tau / sides,
 			angle_init = (pi - angle_inc) / 2;
@@ -258,5 +260,28 @@ namespace shp {
 		pts.reserve(sides);
 		for (double angle = angle_init; sides--; angle += angle_inc)
 			pts.emplace_back(x + radius * cos(angle), y + radius * sin(angle));
+	}
+
+	PolyBase::PolyBase(int32_t x, int32_t y, const std::vector<int32_t> &radii,
+		int32_t repeats) {
+		const int32_t sides = repeats * radii.size();
+		const double angle_inc = tau / sides;
+		double angle = (pi - tau / repeats) / 2;
+
+		pts.reserve(sides);
+		while (repeats-- > 0) {
+			for (auto radius : radii) {
+				pts.emplace_back(x + radius * cos(angle), y + radius * sin(angle));
+				angle += angle_inc;
+			}
+		}
+
+	}
+
+	PolyBase &PolyBase::rotate(double rotation) {
+		Rotatable::rotate(rotation);
+		for (auto &p : pts)
+			p = p.rotated(rotation);
+		return *this;
 	}
 }
