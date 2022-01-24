@@ -1,6 +1,8 @@
 #pragma once
+#include <ctime>
 #include <optional>
 #include <functional>
+#include <random>
 #include "positions.hpp"
 
 constexpr inline static double tau = 6.28318530718;
@@ -108,3 +110,18 @@ public:
 		return !(lhs == rhs);
 	}
 };
+
+static struct {
+	std::minstd_rand engine{ static_cast<uint32_t>(time(nullptr)) };
+	std::uniform_int_distribution<uint32_t> distint{ 0U, ~0U };
+	std::uniform_real_distribution<double> distreal{ 0U, 1 };
+
+	inline double real() { return distreal(engine); }
+	inline uint32_t integer() { return distint(engine); }
+	inline uint32_t integer(uint32_t limit) {
+		return static_cast<uint32_t>(distreal(engine) * limit);
+	}
+	inline uint32_t integer(uint32_t inf, uint32_t sup) {
+		return std::uniform_int_distribution<uint32_t>(inf, sup)(engine);
+	}
+} rng;

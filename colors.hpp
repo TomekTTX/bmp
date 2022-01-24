@@ -1,13 +1,15 @@
 #pragma once
 #include "common.hpp"
 #include <vector>
-#include <iostream>
+#include <random>
+#include <chrono>
 
 namespace bmp {
 	struct Color {
 		uint8_t r, g, b;
 
 		inline constexpr Color() : r(0), g(0), b(0) {};
+		inline constexpr Color(int32_t r, int32_t g, int32_t b) : r(r), g(g), b(b) {}
 		inline constexpr Color(uint32_t r, uint32_t g, uint32_t b) : r(r), g(g), b(b) {}
 		inline constexpr Color(uint32_t rgb) :
 			r((rgb >> 16) & 0xFF), g((rgb >> 8) & 0xFF), b((rgb) & 0xFF) {}
@@ -69,6 +71,29 @@ namespace bmp {
 
 		virtual inline Color get(int32_t x, int32_t y) const override {
 			return color[getShade(x, y, degree)];
+		}
+	};
+
+	class RandomColor : public ColorProvider {
+	public:
+		RandomColor() {}
+
+		virtual inline Color get(int32_t x, int32_t y) const override {
+			return { rng.integer() };
+		}
+	};
+
+	class RandomChoice : public ColorProvider {
+	private:
+		std::vector<Color> colors;
+	public:
+		RandomChoice(const std::vector<Color> &col) : colors(col) {
+			if (colors.empty())
+				colors.emplace_back();
+		}
+
+		virtual inline Color get(int32_t x, int32_t y) const override {
+			return colors[rng.integer(colors.size())];
 		}
 	};
 
