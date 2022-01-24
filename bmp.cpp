@@ -130,6 +130,23 @@ namespace bmp {
 			drawPixel(p.x + x, p.y + y, prov);
 	}
 
+	Surface BMP::copySurface(const shp::Shape &shape, int32_t x, int32_t y) const {
+		auto br = shape.boundingRect();
+		Surface ret{ 1U + br.xM - br.xm, 1U + br.yM - br.ym };
+
+		for (const auto &p : shape)
+			ret.set(p.x - br.xm, p.y - br.ym, pixel(x + p.x, y + p.y));
+
+		return ret;
+	}
+
+	void BMP::pasteSurface(const Surface &surface, int32_t x, int32_t y) {
+		for (uint32_t yp = 0; yp < surface.height(); ++yp)
+			for (uint32_t xp = 0; xp < surface.width(); ++xp)
+				if (surface.hasColor(xp, yp))
+					drawPixel(x + xp, y + yp, surface(xp, yp));
+	}
+
 	void BMP::drawSimpleLine(int32_t x, int32_t y, int8_t dx, int8_t dy, int32_t len, Color color) {
 		dx = sgn(dx);
 		dy = sgn(dy);

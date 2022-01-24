@@ -80,26 +80,23 @@ namespace bmp {
 	public:
 		Surface(std::size_t width, std::size_t height);
 
+		inline std::size_t width() const { return w; }
+		inline std::size_t height() const { return h; }
+
 		inline void set(std::size_t x, std::size_t y, Color color) {
 			color_space(y, x) = color;
 			transparency[y][x] = false;
-		}
-		
+		}		
 		inline void reset(std::size_t x, std::size_t y) {
 			transparency[y][x] = true;
 		}
-
 		inline void clear() {
 			std::fill(transparency.begin(), transparency.end(), true);
 		}
-
 		inline bool hasColor(std::size_t x, std::size_t y) const {
 			return !transparency[y][x];
 		}
-
-		inline std::optional<Color> operator()(std::size_t x, std::size_t y) const {
-			if (transparency[y][x])
-				return std::nullopt;
+		inline Color operator()(std::size_t x, std::size_t y) const {
 			return color_space(y, x);
 		}
 	};
@@ -137,6 +134,19 @@ namespace bmp {
 		void drawShape(const shp::Shape &shape, Color color, int32_t x = 0, int32_t y = 0);
 		void drawShape(const shp::Shape &shape,	const ColorProvider &prov,
 			int32_t x = 0, int32_t y = 0);
+
+		Surface copySurface(const shp::Shape &shape, int32_t x = 0, int32_t y = 0) const;
+		void pasteSurface(const Surface &surface, int32_t x, int32_t y);
+
+
+		void floodFill(int32_t x, int32_t y, Color color);
+		void fillAll(Color color);
+		void clear();
+
+		void writeTo(std::ostream &ost) const;
+		void writeTo(const std::string_view &fileName) const;
+
+		// old drawing functions:
 
 		void drawSimpleLine(int32_t x, int32_t y, int8_t dx, int8_t dy, int32_t len, Color color);
 		void drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, Color color);
@@ -180,13 +190,6 @@ namespace bmp {
 		void drawAscii(char c, int32_t x, int32_t y, Color color, double scaleX = 1, double scaleY = 1);
 		void drawString(const std::string_view &str, int32_t x, int32_t y,
 			Color color, double scaleX = 1, double scaleY = 1, int32_t interspace = 1);
-
-		void floodFill(int32_t x, int32_t y, Color color);
-		void fillAll(Color color);
-		void clear();
-
-		void writeTo(std::ostream &ost) const;
-		void writeTo(const std::string_view &fileName) const;
 	private:
 		inline int32_t invY(int32_t y) const { return bih.biHeight - 1 - y; }
 		inline static bool ellipse_pred_int(int32_t x, int32_t y, int32_t rx, int32_t ry) {
@@ -196,15 +199,14 @@ namespace bmp {
 			return x * x / (rx * rx) + y * y / (ry * ry) <= 1;
 		}
 		inline bool validPos(int32_t x, int32_t y) const {
-			return x >= 0 && y >= 0 &&
-				x < static_cast<int32_t>(bih.biWidth) &&
-				y < static_cast<int32_t>(bih.biHeight);
+			return
+				x >= 0 && y >= 0 &&
+				x < bih.biWidth &&y < bih.biHeight;
 		}
 
 		void initDefaultHeaders();
 		static bool evenOddRule(int32_t x, int32_t y, const Poly &poly, bool include_border = false);
 		static Poly rotatedRect(int32_t x0, int32_t y0, int32_t x1, int32_t y1, double rotation);
 		static std::array<int32_t, 4> boundingRect(const Poly &poly);
-		//static bool getGradient(int32_t x, int32_t y, uint8_t degree);
 	};
 }

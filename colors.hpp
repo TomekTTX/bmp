@@ -130,7 +130,7 @@ namespace bmp {
 	private:
 		Color binaryGet(int32_t xp, int32_t yp, double distance) const;
 		Color blendGet(int32_t xp, int32_t yp, double distance) const;
-		static Color blend(Color color1, Color color2, double frac, double mean_exponent);
+		static Color blend(Color color1, Color color2, double frac, double blend_mode);
 	};
 
 	class LinearGradient : public Gradient {

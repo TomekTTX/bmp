@@ -72,7 +72,7 @@ namespace shp {
 		RectBase(base_type p0, base_type p1) :
 			RectBase(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y) {}
 
-		virtual inline Boundary boundingRect() const override { return { x,y,dx,dy }; }
+		virtual inline Boundary boundingRect() const override { return { x,y,x+dx,y+dy }; }
 	};
 
 	class EllipseBase : public Shape, public Rotatable {
