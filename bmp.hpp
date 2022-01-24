@@ -124,6 +124,12 @@ namespace bmp {
 		inline Color &pixel(int32_t x, int32_t y) { return color_space(invY(y), x); }
 		inline void drawPixel(int32_t x, int32_t y, Color color) { pixel(x, y) = color; }
 		inline void drawPixel(int32_t x, int32_t y, const ColorProvider &cp) { pixel(x, y) = cp.get(x, y); }
+		inline void drawPixel(int32_t x, int32_t y, Color color, uint8_t alpha) {
+			pixel(x, y) = pixel(x, y).blend(color, alpha);
+		}
+		inline void drawPixel(int32_t x, int32_t y, const ColorProvider &cp, uint8_t alpha) {
+			drawPixel(x, y, cp.get(x, y), alpha);
+		}
 		inline void drawPixelRound(double x, double y, Color color) {
 			drawPixel(rnd(x), rnd(y), color);
 		}
@@ -133,10 +139,14 @@ namespace bmp {
 
 		void drawShape(const shp::Shape &shape, Color color, int32_t x = 0, int32_t y = 0);
 		void drawShape(const shp::Shape &shape,	const ColorProvider &prov,
-			int32_t x = 0, int32_t y = 0);
+			int32_t x = 0, int32_t y = 0);	
+		void drawShape(const shp::Shape &shape, Color color,
+			uint8_t alpha, int32_t x = 0, int32_t y = 0);
+		void drawShape(const shp::Shape &shape,	const ColorProvider &prov,
+			uint8_t alpha, int32_t x = 0, int32_t y = 0);
 
 		Surface copySurface(const shp::Shape &shape, int32_t x = 0, int32_t y = 0) const;
-		void pasteSurface(const Surface &surface, int32_t x, int32_t y);
+		void pasteSurface(const Surface &surface, int32_t x, int32_t y, uint8_t alpha = 0xFF);
 
 
 		void floodFill(int32_t x, int32_t y, Color color);
@@ -146,7 +156,8 @@ namespace bmp {
 		void writeTo(std::ostream &ost) const;
 		void writeTo(const std::string_view &fileName) const;
 
-		// old drawing functions:
+
+		// simplified drawing functions:
 
 		void drawSimpleLine(int32_t x, int32_t y, int8_t dx, int8_t dy, int32_t len, Color color);
 		void drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, Color color);

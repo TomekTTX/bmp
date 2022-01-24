@@ -17,6 +17,9 @@ namespace bmp {
 		inline bool operator==(const Color &other) const {
 			return r == other.r && g == other.g && b == other.b;
 		}
+
+		Color blend(Color other, double frac, double blend_mode) const;
+		Color blend(Color other, uint8_t alpha) const;
 	};
 
 	namespace colors {
@@ -130,7 +133,7 @@ namespace bmp {
 	private:
 		Color binaryGet(int32_t xp, int32_t yp, double distance) const;
 		Color blendGet(int32_t xp, int32_t yp, double distance) const;
-		static Color blend(Color color1, Color color2, double frac, double blend_mode);
+		//static Color blend(Color color1, Color color2, double frac, double blend_mode);
 	};
 
 	class LinearGradient : public Gradient {

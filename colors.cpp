@@ -2,6 +2,29 @@
 
 namespace bmp {
 
+	inline double transform(double a, double b, double degree = 1.) {
+		a = std::pow(a, degree);
+		return a / (a + std::pow(b, degree));
+	}
+
+	Color Color::blend(Color other, double frac, double blend_mode) const {
+		frac = transform(frac, 1 - frac, blend_mode);
+		return Color(
+			rnd(r * (1 - frac) + other.r * frac),
+			rnd(g * (1 - frac) + other.g * frac),
+			rnd(b * (1 - frac) + other.b * frac)
+		);
+	}
+
+	Color Color::blend(Color other, uint8_t alpha) const {
+		const uint16_t thisMult = 0xFF - alpha, otherMult = alpha;
+		return Color(
+			(r * thisMult + other.r * otherMult) / 0xFF,
+			(g * thisMult + other.g * otherMult) / 0xFF,
+			(b * thisMult + other.b * otherMult) / 0xFF
+		);
+	}
+
 	bool ColorProvider::getShade(int32_t x, int32_t y, uint8_t degree) {
 		switch (degree % degree_cnt) {
 		case 0: return false;
@@ -82,26 +105,12 @@ namespace bmp {
 			index %= (colors.size() - 1);
 		else if (index >= colors.size() - 1)
 			return colors.back();
-		return blend(colors[index], colors[index + 1], frac, blend_mode);
+		return colors[index].blend( colors[index + 1], frac, blend_mode);
 	}
 
 	Color Gradient::get(int32_t xp, int32_t yp) const {
 		return binary_blend ?
 			binaryGet(xp, yp, dist(xp, yp) / unit_dist) :
 			blendGet(xp, yp, dist(xp, yp) / unit_dist);
-	}
-
-	inline double transform(double a, double b, double degree = 1.) {
-		a = std::pow(a, degree);
-		return a / (a + std::pow(b, degree));
-	}
-
-	Color Gradient::blend(Color color1, Color color2, double frac, double blend_mode) {
-		frac = transform(frac, 1 - frac, blend_mode);
-		return Color(
-			rnd(color1.r * (1 - frac) + color2.r * frac),
-			rnd(color1.g * (1 - frac) + color2.g * frac), 
-			rnd(color1.b * (1 - frac) + color2.b * frac)
-		);
 	}
 }
