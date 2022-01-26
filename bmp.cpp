@@ -52,6 +52,31 @@ namespace bmp {
 	}
 
 	BMP::BMP(std::istream &ist, Color bgColor) : bgColor(bgColor) {
+		readFrom(ist);
+	}
+
+	BMP::BMP(std::size_t width, std::size_t height, Color bgColor) : bgColor(bgColor) {
+		initDefaultHeaders();
+
+		pad_size = width % 4;
+
+		bih.biWidth = width;
+		bih.biHeight = height;
+		bih.biSizeImage = (3 * width + pad_size) * height;
+		bfh.bfSize = bfh.bfOffBits + bih.biSizeImage;
+
+		color_space = Matrix<Color>(height, width, bgColor);
+	}
+
+	BMP::BMP(const std::string_view &fileName, Color bgColor) {
+		std::ifstream file{ fileName.data(), std::ios::binary | std::ios::in };
+		if (file.is_open())
+			readFrom(file);
+		else
+			initDefaultHeaders();
+	}
+
+	void BMP::readFrom(std::istream &ist) {
 		bfh.readFrom(ist);
 		bih.readFrom(ist);
 		pad_size = bih.biWidth % 4;
@@ -71,23 +96,10 @@ namespace bmp {
 		}
 	}
 
-	BMP::BMP(std::size_t width, std::size_t height, Color bgColor) : bgColor(bgColor) {
-		initDefaultHeaders();
-
-		pad_size = width % 4;
-
-		bih.biWidth = width;
-		bih.biHeight = height;
-		bih.biSizeImage = (3 * width + pad_size) * height;
-		bfh.bfSize = bfh.bfOffBits + bih.biSizeImage;
-
-		color_space = Matrix<Color>(height, width, bgColor);
-	}
-
 	void BMP::initDefaultHeaders() {
 		bfh.bfType = 'B' | ('M' << 8);
 		bfh.bfReserved1 = bfh.bfReserved2 = 0;
-		bfh.bfOffBits = 54;
+		bfh.bfOffBits = bfh.bfSize = 54;
 
 		bih.biSize = 40;
 		bih.biPlanes = 1;
@@ -95,6 +107,7 @@ namespace bmp {
 		bih.biCompression = 0;
 		bih.biXpelsPerMeter = bih.biYpelsPerMeter = 3780;
 		bih.biCrlUses = bih.biCrlImportant = 0;
+		bih.biWidth = bih.biHeight = 0;
 	}
 
 	void BMP::writeTo(std::ostream &ost) const {
@@ -128,7 +141,7 @@ namespace bmp {
 	void BMP::drawShape(const shp::Shape &shape, const ColorProvider &prov,
 		int32_t x, int32_t y) {
 		for (const auto &p : shape)
-			drawPixel(p.x + x, p.y + y, prov);
+			drawPixel(p.x + x, p.y + y, prov.get(p.x, p.y));
 	}
 
 	void BMP::drawShape(const shp::Shape &shape, Color color,
@@ -140,7 +153,7 @@ namespace bmp {
 	void BMP::drawShape(const shp::Shape &shape, const ColorProvider &prov,
 		uint8_t alpha, int32_t x, int32_t y) {
 		for (const auto &p : shape)
-			drawPixel(p.x + x, p.y + y, prov, alpha);
+			drawPixel(p.x + x, p.y + y, prov.get(p.x, p.y), alpha);
 	}
 
 	Surface BMP::copySurface(const shp::Shape &shape, int32_t x, int32_t y) const {
@@ -158,6 +171,12 @@ namespace bmp {
 			for (uint32_t xp = 0; xp < surface.width(); ++xp)
 				if (surface.hasColor(xp, yp))
 					drawPixel(x + xp, y + yp, surface(xp, yp), alpha);
+	}
+
+	void BMP::blit(const BMP &src, int32_t x, int32_t y, uint8_t alpha) {
+		for (uint32_t yp = 0; yp < src.height() && yp + y < height(); ++yp)
+			for (uint32_t xp = 0; xp < src.width() && xp + x < width(); ++xp)
+				drawPixel(x + xp, y + yp, src.pixel(xp, yp), alpha);
 	}
 
 	void BMP::drawSimpleLine(int32_t x, int32_t y, int8_t dx, int8_t dy, int32_t len, Color color) {
@@ -439,7 +458,7 @@ namespace bmp {
 		}
 	}
 
-	void BMP::floodFill(int32_t x, int32_t y, Color color) {
+	void BMP::floodFill(int32_t x, int32_t y, const Color color) {
 		Pos<int32_t> cur;
 		const Color target = pixel(x, y);
 		if (color == target)
@@ -463,6 +482,12 @@ namespace bmp {
 
 	void BMP::fillAll(Color color) {
 		std::fill(color_space.begin(), color_space.end(), color);
+	}
+
+	void BMP::fillAll(const ColorProvider &cp) {
+		for (uint32_t yp = 0; yp < height(); ++yp)
+			for (uint32_t xp = 0; xp < width(); ++xp)
+				drawPixel(xp, yp, cp);
 	}
 
 	void BMP::clear() {
@@ -616,53 +641,6 @@ namespace bmp {
 
 
 /*
-
-	Poly Poly::interleaveMany(std::initializer_list<Poly> poly_list) {
-		Poly ret = *poly_list.begin();
-		uint32_t distance = 0;
-
-		for (const auto &poly : poly_list)
-			if (distance++)
-				ret.interleave(poly, distance - 1);
-
-		return ret;
-	}
-
-//const auto base = boundingRect({ {x - rx, y - ry}, {x + rx, y + ry} });
-//const auto bound = boundingRect(rotatedRect(base[0], base[1], base[2], base[3], rotation));
-//const int32_t xm = (bound[0] + bound[2]) / 2, ym = (bound[1] + bound[3]) / 2;
-
-void BMP::drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, Color color) {
-	if (x0 == x1 && y0 == y1) {
-		drawPixel(x0, y0, color);
-		return;
-	}
-
-	const int32_t xstart = std::min(x0, x1), ystart = std::min(y0, y1);
-	const int32_t xend = std::max(x0, x1), yend = std::max(y0, y1);
-	const double dx = static_cast<double>(xend) - xstart;
-	const double dy = static_cast<double>(yend) - ystart;
-	double x = xstart, y = ystart;
-	double &arg = (dx > dy ? x : y);
-	double &val = (dx > dy ? y : x);
-	const double tangent = std::min(dx, dy) / std::max(dx, dy);
-
-	while (x < xend || y < yend) {
-		drawPixel(static_cast<int32_t>(x + .5), static_cast<int32_t>(y + .5), color);
-		arg += 1;
-		val += tangent;
-	}
-}
-
-void BMP::drawLine(const Pos<double>& p0, const Pos<double>& p1, Color color) {
-	constexpr double step_base = 1;
-	const double step = step_base / p0.distance(p1);
-
-	for (double t = 0, it = 1; t <= 1; it = 1 - (t += step)) {
-		const Pos<double> point = p0 * it + p1 * t;
-		drawPixelRound(point.x, point.y, color);
-	}
-}
 
 void BMP::oldFloodFill(int32_t x, int32_t y, Color color) {
 	const Color target = pixel(x, y);

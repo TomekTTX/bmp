@@ -115,6 +115,7 @@ namespace bmp {
 
 		BMP(std::istream &ist, Color bgColor = colors::white);
 		BMP(std::size_t width, std::size_t height, Color bgColor = colors::white);
+		BMP(const std::string_view &fileName, Color bgColor = colors::white);
 
 		inline uint32_t width() const { return bih.biWidth; }
 		inline uint32_t height() const { return bih.biHeight; }
@@ -147,10 +148,11 @@ namespace bmp {
 
 		Surface copySurface(const shp::Shape &shape, int32_t x = 0, int32_t y = 0) const;
 		void pasteSurface(const Surface &surface, int32_t x, int32_t y, uint8_t alpha = 0xFF);
-
+		void blit(const BMP &src, int32_t x, int32_t y, uint8_t alpha = 0xFF);
 
 		void floodFill(int32_t x, int32_t y, Color color);
 		void fillAll(Color color);
+		void fillAll(const ColorProvider &cp);
 		void clear();
 
 		void writeTo(std::ostream &ost) const;
@@ -216,8 +218,18 @@ namespace bmp {
 		}
 
 		void initDefaultHeaders();
+		void readFrom(std::istream &ist);
 		static bool evenOddRule(int32_t x, int32_t y, const Poly &poly, bool include_border = false);
 		static Poly rotatedRect(int32_t x0, int32_t y0, int32_t x1, int32_t y1, double rotation);
 		static std::array<int32_t, 4> boundingRect(const Poly &poly);
 	};
 }
+
+
+/*
+
+		const int32_t
+			xM = std::min(src.width() + x, width()) - 1,
+			yM = std::min(src.height() + y, height()) - 1;
+
+*/
