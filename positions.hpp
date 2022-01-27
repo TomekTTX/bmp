@@ -54,6 +54,10 @@ struct Pos {
 			static_cast<T>(rnd(y)),
 		};
 	}
+	template <typename T>
+	operator Pos<T>() const {
+		return { static_cast<T>(x),	static_cast<T>(y), };
+	}
 
 	double distance2(const Pos &other) const {
 		const T dx = std::max(x, other.x) - std::min(x, other.x);
