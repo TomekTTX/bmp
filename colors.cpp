@@ -25,6 +25,14 @@ namespace bmp {
 		);
 	}
 
+	Color Color::blend(ColorA other) const {
+		return blend(other, other.a);
+	}
+
+	Color ColorA::blend(const Color &other) const {
+		return other.blend(*this, a);
+	}
+
 	bool ColorProvider::getShade(int32_t x, int32_t y, uint8_t degree) {
 		switch (degree % degree_cnt) {
 		case 0: return false;
@@ -52,39 +60,16 @@ namespace bmp {
 		}
 	}
 
-	// distance from point to line
-	// d(P(xp, yp), (Ax + By + C = 0)) = |A*xp + B*yp + C| / sqrt(A*A + B*B)
-	double LinearGradient::dist(int32_t xp, int32_t yp) const {
-		return std::abs(vect.dx * xp + vect.dy * yp + c) * div;
+	Color Gradient::get(int32_t xp, int32_t yp) const {
+		return binary_blend ?
+			binaryGet(xp, yp, dist(xp, yp) / unit_dist) :
+			blendGet(xp, yp, dist(xp, yp) / unit_dist);
 	}
 
-	// cartesian distance
-	double RadialGradient::dist(int32_t xp, int32_t yp) const {
-		const int32_t xdif = vect.x - xp, ydif = vect.y - yp;
-		return std::sqrt(xdif * xdif + ydif * ydif);
-	}
-
-	// angular distance
-	double ConicalGradient::dist(int32_t xp, int32_t yp) const {
-		double ret = std::atan2(yp - vect.y, xp - vect.x) - base_atan;
-		if (ret < 0)
-			ret += tau;
-		return ret;
-	}
-
-	void Gradient::setRepeating(bool value)	{
-		if (value ^ repeating) {
-			if (value)
-				colors.push_back(colors.front());
-			else
-				colors.pop_back();
-			repeating = value;
-		}
-	}
-
+	// get color for binary mode
 	Color Gradient::binaryGet(int32_t xp, int32_t yp, double distance) const {
 		const uint32_t
-			mult = rnd(distance) * step,
+			mult = rnd(distance * degree_cnt * (colors.size() - 1) / step) * step,
 			deg = mult % degree_cnt;
 		uint32_t index = mult / degree_cnt;
 
@@ -94,23 +79,91 @@ namespace bmp {
 			return colors.back();
 		return colors[index + getShade(xp, yp, deg)];
 	}
-	
+
+	// get color for blend mode
+	// note that this ignores the value of 'step'
 	Color Gradient::blendGet(int32_t xp, int32_t yp, double distance) const {
 		const double
-			mult = distance * step / degree_cnt,
+			mult = distance * (colors.size() - 1),
 			frac = std::fmod(mult, 1);
 		uint32_t index = static_cast<uint32_t>(mult);
 
 		if (repeating)
 			index %= (colors.size() - 1);
-		else if (index >= colors.size() - 1)
+		else if (index + 1 >= colors.size())
 			return colors.back();
-		return colors[index].blend( colors[index + 1], frac, blend_mode);
+		return colors[index].blend(colors[index + 1], frac, blend_mode);
 	}
 
-	Color Gradient::get(int32_t xp, int32_t yp) const {
-		return binary_blend ?
-			binaryGet(xp, yp, dist(xp, yp) / unit_dist) :
-			blendGet(xp, yp, dist(xp, yp) / unit_dist);
+	void Gradient::setRepeating(bool value) {
+		if (value ^ repeating) {
+			if (value)
+				colors.push_back(colors.front());
+			else
+				colors.pop_back();
+			repeating = value;
+		}
+	}
+
+	// distance from point to line
+	// d(P(xp, yp), (Ax + By + C = 0)) = |A*xp + B*yp + C| / sqrt(A*A + B*B)
+	double LinearGradient::dist(int32_t xp, int32_t yp) const {
+		return std::abs(vect.dx * xp + vect.dy * yp + c) * length_inverse;
+	}
+
+	// cartesian distance
+	double RadialGradient::dist(int32_t xp, int32_t yp) const {
+		const int32_t dx = vect.x - xp, dy = vect.y - yp;
+		return std::sqrt(dx * dx + dy * dy);
+	}
+
+	// angular distance
+	double ConicalGradient::dist(int32_t xp, int32_t yp) const {
+		double ret = (std::atan2(yp - vect.y, xp - vect.x) - base_atan) / tau;
+		ret += (ret < 0);
+		return ret * vec_magn;
+	}
+
+	// combined angular and cartesian distance
+	double SpiralGradient::dist(int32_t xp, int32_t yp) const {
+		const int32_t dx = xp - vect.x, dy = yp - vect.y;
+		const double point_angle = std::atan2(dy, dx);
+		const double point_radius = std::sqrt(dx * dx + dy * dy) / sparsity;
+
+		double ret = std::fmod(point_angle - start_angle + point_radius, tau) / tau;
+		ret += (ret < 0);
+		return ret * sparsity;
+	}
+
+	// "rotated manhattan distance" aka square equation
+	double SquareGradient::dist(int32_t xp, int32_t yp) const {
+		const int32_t dx = xp - vect.x, dy = yp - vect.y;
+		return
+			std::abs(dx * cosa + dy * sina) +
+			std::abs(dx * sina - dy * cosa);
+	}
+	
+	double SuperellipticGradient::dist(int32_t xp, int32_t yp) const {
+		const int32_t dx = xp - vect.x, dy = yp - vect.y;
+		const double
+			dxr = std::pow(std::abs(dx * cosa + dy * sina), degree),
+			dyr = std::pow(std::abs(dx * sina - dy * cosa) * ratio, degree);
+		return std::pow(dxr + dyr, 1 / degree);
+	}
+
+	double SimplexGradient::dist(int32_t xp, int32_t yp) const {
+		Pos<double> skewed = skew({ xp,yp });
+		Pos<int32_t> cell = skewed;
+		Pos<double> coords = skewed - cell;
+
+		return coords.x + coords.y;
+	}
+
+	constexpr Pos<double> SimplexGradient::skew(Pos<int32_t> coords) {
+		const double skew_val = (1. * coords.x + coords.y) * F;
+		return {
+			 skew_val + coords.x,
+			 skew_val + coords.y,
+		};
 	}
 }

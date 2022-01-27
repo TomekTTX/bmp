@@ -5,10 +5,12 @@
 #include <chrono>
 
 namespace bmp {
+	struct ColorA;
+
 	struct Color {
 		uint8_t r, g, b;
 
-		inline constexpr Color() : r(0), g(0), b(0) {};
+		inline constexpr Color() : r(0), g(0), b(0) {}
 		inline constexpr Color(int32_t r, int32_t g, int32_t b) : r(r), g(g), b(b) {}
 		inline constexpr Color(uint32_t r, uint32_t g, uint32_t b) : r(r), g(g), b(b) {}
 		inline constexpr Color(uint32_t rgb) :
@@ -18,8 +20,32 @@ namespace bmp {
 			return r == other.r && g == other.g && b == other.b;
 		}
 
+		inline Color grayscale() {
+			const uint8_t aprx_lumi = (r + r + r + (g << 2) + b) >> 3;
+			return { aprx_lumi,aprx_lumi,aprx_lumi };
+		}
+
 		Color blend(Color other, double frac, double blend_mode) const;
 		Color blend(Color other, uint8_t alpha) const;
+		Color blend(ColorA other) const;
+	};
+
+	struct ColorA : public Color {
+		uint8_t a;
+
+		inline constexpr ColorA() : Color(), a(0) {}
+		inline constexpr ColorA(int32_t r, int32_t g, int32_t b):
+			Color(r, g, b), a(0xFF) {}
+		inline constexpr ColorA(uint32_t r, uint32_t g, uint32_t b) :
+			Color(r, g, b), a(0xFF) {}
+		inline constexpr ColorA(int32_t r, int32_t g, int32_t b,
+			int32_t a) : Color(r,g,b), a(a) {}
+		inline constexpr ColorA(uint32_t r, uint32_t g, uint32_t b,
+			uint32_t a) : Color(r, g, b), a(a) {}
+		inline constexpr ColorA(uint32_t argb) :
+			Color(argb), a((argb >> 24) & 0xFF) {}
+
+		Color blend(const Color &other) const;
 	};
 
 	namespace colors {
@@ -72,7 +98,7 @@ namespace bmp {
 			color[1] = color2;
 		}
 
-		virtual inline Color get(int32_t x, int32_t y) const override {
+		inline Color get(int32_t x, int32_t y) const override {
 			return color[getShade(x, y, degree)];
 		}
 	};
@@ -81,8 +107,8 @@ namespace bmp {
 	public:
 		RandomColor() {}
 
-		virtual inline Color get(int32_t x, int32_t y) const override {
-			return { rng.integer() };
+		inline Color get(int32_t x, int32_t y) const override {
+			return rng.integer();
 		}
 	};
 
@@ -95,7 +121,7 @@ namespace bmp {
 				colors.emplace_back();
 		}
 
-		virtual inline Color get(int32_t x, int32_t y) const override {
+		inline Color get(int32_t x, int32_t y) const override {
 			return colors[rng.integer(colors.size())];
 		}
 	};
@@ -106,71 +132,117 @@ namespace bmp {
 			int32_t x, y, dx, dy;
 			inline double len() const { return std::sqrt(dx * dx + dy * dy); }
 			inline double angle() const { return std::atan2(dy, dx); }
+			inline double sin() const { return dy / len(); }
+			inline double cos() const { return dx / len(); }
 		};
 	protected:
-		Vect vect{};
+		Vect vect{}; // vect is used for calculations in overrides of dist()
 	private:
 		std::vector<Color> colors;
 		double unit_dist = 0, blend_mode = 1;
 		uint8_t step = 1;
 		bool repeating = false, binary_blend = true;
 	public:
-		Gradient(std::vector<Color> &&colors, const Vect &vect,	double mult, uint8_t step) :
+		Gradient(const std::vector<Color> &colors, const Vect &vect, double mult, uint8_t step) :
 			colors(colors), vect(vect), unit_dist(vect.len() * mult), step(step) {
 			if (colors.empty())
 				this->colors.emplace_back();
+			setRepeating();
 		}
 
 		virtual Color get(int32_t xp, int32_t yp) const override;
 
 		inline void translate(int32_t x, int32_t y) { vect.x += x, vect.y += y; }
-		inline void setVect(const Vect &newVect) { vect = newVect; }
 		inline void setBlendMode(double mode = 1.) { blend_mode = mode, binary_blend = false; }
 		inline void setBinaryMode() { binary_blend = true; }
 		void setRepeating(bool value = true);
-	protected:
-		virtual double dist(int32_t xp, int32_t yp) const = 0;
 	private:
+		virtual double dist(int32_t xp, int32_t yp) const = 0;
 		Color binaryGet(int32_t xp, int32_t yp, double distance) const;
 		Color blendGet(int32_t xp, int32_t yp, double distance) const;
-		//static Color blend(Color color1, Color color2, double frac, double blend_mode);
 	};
 
 	class LinearGradient : public Gradient {
 	private:
-		double div;
+		double length_inverse;
 		int32_t c;
 	public:
-		LinearGradient(std::vector<Color> &&colors, const Vect &vect,
+		LinearGradient(const std::vector<Color> &colors, const Vect &vect,
 			double mult = 1., uint8_t step = 1) :
-			Gradient(std::move(colors), vect, mult, step), div(1 / vect.len()),
+			Gradient(colors, vect, mult, step), length_inverse(1 / vect.len()),
 			c(-(vect.dx * vect.x + vect.dy * vect.y)) {}
-	protected:
-		virtual double dist(int32_t xp, int32_t yp) const override;
+	private:
+		double dist(int32_t xp, int32_t yp) const override;
 	};
 
 	class RadialGradient : public Gradient {
 	public:
-		RadialGradient(std::vector<Color> &&colors, const Vect &vect,
+		RadialGradient(const std::vector<Color> &colors, const Vect &vect,
 			double mult = 1., uint8_t step = 1) :
-			Gradient(std::move(colors), vect, mult, step) {}
-	protected:
-		virtual double dist(int32_t xp, int32_t yp) const override;
+			Gradient(colors, vect, mult, step) {}
+	private:
+		double dist(int32_t xp, int32_t yp) const override;
 	};
 
 	class ConicalGradient : public Gradient {
 	private:
-		double base_atan;
+		double base_atan, vec_magn;
 	public:
-		ConicalGradient(std::vector<Color> &&colors, const Vect &vect,
+		ConicalGradient(const std::vector<Color> &colors, const Vect &vect,
 			double mult = 1., uint8_t step = 1) :
-			Gradient(std::move(colors), vect, 1 / mult, step),
-			base_atan(vect.angle()) {}
-	protected:
-		virtual double dist(int32_t xp, int32_t yp) const override;
+			Gradient(colors, vect, 1 / mult, step),
+			base_atan(vect.angle()), vec_magn(vect.len()) {}
+	private:
+		double dist(int32_t xp, int32_t yp) const override;
 	};
 
-	//class FunctionalGradient : public Gradient {
-	//
-	//};
+	class SpiralGradient : public Gradient {
+	private:
+		double start_angle, sparsity;
+	public:
+		SpiralGradient(const std::vector<Color> &colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			Gradient(colors, vect, 1 / mult, step),
+			start_angle(vect.angle()), sparsity(vect.len()) {}
+	private:
+		double dist(int32_t xp, int32_t yp) const override;
+	};
+
+	class SquareGradient : public Gradient {
+	private:
+		double sina, cosa;
+	public:
+		SquareGradient(const std::vector<Color> &colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			Gradient(colors, vect, mult, step),
+			sina(vect.sin()), cosa(vect.cos()) {}
+	private:
+		double dist(int32_t xp, int32_t yp) const override;
+	};
+
+	class SuperellipticGradient : public Gradient {
+	private:
+		double sina, cosa, degree, ratio;
+	public:
+		SuperellipticGradient(const std::vector<Color> &colors, const Vect &vect,
+			double deg, double xyratio = 1., double mult = 1., uint8_t step = 1) :
+			Gradient(colors, vect, mult, step), ratio(xyratio),
+			degree(deg), sina(vect.sin()), cosa(vect.cos()) {}
+	private:
+		double dist(int32_t xp, int32_t yp) const override;
+	};
+
+	// WIP
+	class SimplexGradient : public Gradient {
+	private:
+		static constexpr double F = 0.3660254037844; // (sqrt(3) - 1) / 2
+		static constexpr double G = 0.2113248654052; // (1 - 1/sqrt(3)) / 2
+	public:
+		SimplexGradient(const std::vector<Color> &colors, const Vect &vect,
+			double mult = 1., uint8_t step = 1) :
+			Gradient(colors, vect, mult, step) {}
+	private:
+		double dist(int32_t xp, int32_t yp) const override;
+		static constexpr Pos<double> skew(Pos<int32_t> coords);
+	};
 }
