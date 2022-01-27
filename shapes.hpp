@@ -227,7 +227,7 @@ namespace shp {
 
 	class Ellipse : public EllipseBase {
 	public:
-		Ellipse(int32_t x, int32_t y, int32_t rx, int32_t ry, double rotation) :
+		Ellipse(int32_t x, int32_t y, int32_t rx, int32_t ry, double rotation = 0.) :
 			EllipseBase(x, y, rx, ry, rotation) {}
 
 		std::unique_ptr<Shape> copy() const override {
@@ -239,7 +239,7 @@ namespace shp {
 
 	class FilledEllipse : public EllipseBase {
 	public:
-		FilledEllipse(int32_t x, int32_t y, int32_t rx, int32_t ry, double rotation) :
+		FilledEllipse(int32_t x, int32_t y, int32_t rx, int32_t ry, double rotation = 0.) :
 			EllipseBase(x, y, rx, ry, rotation) {}
 
 		std::unique_ptr<Shape> copy() const override {
@@ -262,8 +262,8 @@ namespace shp {
 		}
 		CompositeShape(const CompositeShape &other) {
 			components.reserve(other.components.size());
-			for (const auto &uptr : other.components)
-				components.push_back(uptr->copy());
+			for (const auto &component : other.components)
+				components.push_back(component->copy());
 		}
 
 		virtual void addShape(const Shape &shape) { 
@@ -274,7 +274,7 @@ namespace shp {
 			return std::make_unique<CompositeShape>(*this);
 		}
 
-		virtual Boundary boundingRect() const override;
+		Boundary boundingRect() const override;
 
 		template <typename T>
 		T& get(uint32_t index) {
