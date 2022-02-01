@@ -1,7 +1,5 @@
 #pragma once
 #include <ctime>
-#include <optional>
-#include <functional>
 #include <random>
 #include "positions.hpp"
 
@@ -21,95 +19,6 @@ constexpr inline int32_t ipow(int32_t base, uint8_t exp) {
 
 	return ret;
 }
-
-template <typename T>
-class GeneratorIterator {
-public:
-	using iterator_category = std::input_iterator_tag;
-	using difference_type = std::ptrdiff_t;
-	using value_type = T;
-	using pointer = value_type *;
-	using reference = value_type &;
-	using optional = std::optional<value_type>;
-private:
-	optional state;
-	std::function<optional()> operation;
-public:
-	GeneratorIterator() = default;
-	GeneratorIterator(std::function<optional()> op) : operation(std::move(op)) {
-		if (operation)
-			state = operation();
-	}
-
-	T operator*() const { return *state; }
-	GeneratorIterator &operator++() {
-		state = operation();
-		return *this;
-	}
-	GeneratorIterator operator++(int) {
-		auto ret = *this;
-		state = operation();
-		return ret;
-	}
-	friend bool operator==(const GeneratorIterator &lhs, const GeneratorIterator &rhs) {
-		return (!lhs.state && !rhs.state);
-	}
-	friend bool operator!=(const GeneratorIterator &lhs, const GeneratorIterator &rhs) {
-		return !(lhs == rhs);
-	}
-};
-
-template <typename T>
-class CompositeIterator {
-public:
-	using iterator_category = typename T::iterator_category;
-	using difference_type = typename T::difference_type;
-	using value_type = typename T::value_type;
-	using pointer = value_type *;
-	using reference = value_type &;
-	struct IterPair { T begin, end; };
-private:
-	std::vector<IterPair> iters{};
-	value_type state = value_type();
-	uint32_t index = 0;
-	bool done = true;
-public:
-	CompositeIterator() = default;
-	CompositeIterator(std::vector<IterPair> &&itervec) : iters(itervec) {
-		done = false;
-		operator++();
-	}
-	CompositeIterator(std::initializer_list<IterPair> iterlist) {
-		for (const auto &pair : iterlist)
-			iters.push_back(pair);
-		done = false;
-		operator++();
-	}
-
-	value_type operator*() const { return state; }
-	CompositeIterator &operator++() {
-		if (index == iters.size()) {
-			done = true;
-		}
-		else {
-			state = *iters[index].begin++;
-			if (iters[index].begin == iters[index].end)
-				++index;
-		}
-		return *this;
-	}
-	CompositeIterator operator++(int) {
-		auto ret = *this;
-		operator++();
-		return ret;
-	}
-	friend bool operator==(const CompositeIterator &lhs, const CompositeIterator &rhs) {
-		return (lhs.done && rhs.done);
-	}
-	friend bool operator!=(const CompositeIterator &lhs, const CompositeIterator &rhs) {
-		return !(lhs == rhs);
-	}
-};
 
 static struct {
 	std::minstd_rand engine{ static_cast<uint32_t>(time(nullptr)) };
