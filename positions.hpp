@@ -41,11 +41,19 @@ struct Pos {
 		return *this;
 	}
 
+	std::pair<T, T> unpack() const { return std::make_pair(x, y); }
+
 	Pos rotated(double angle) const {
 		return rotated(sin(angle), cos(angle));
 	}
 	Pos rotated(double sina, double cosa) const {
-		return { x * cosa + y * sina, -x * sina + y * cosa };
+		return Pos(Pos<double>{ x *cosa + y * sina, -x * sina + y * cosa });
+	}
+	Pos rotated(double angle, Pos axis) const {
+		return (*this - axis).rotated(sin(angle), cos(angle)) + axis;
+	}
+	Pos rotated(double sina, double cosa, Pos axis) const {
+		return (*this - axis).rotated(sina, cosa) + axis;
 	}
 	template <typename T>
 	Pos<T> round() const {
