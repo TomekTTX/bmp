@@ -2,10 +2,10 @@
 #include <cmath>
 
 namespace shp {
-	std::function<Shape::opt_type()> SimpleLine::genFunc() const {
-		return[this, xp = 0, yp = 0, len_left = len]() mutable->opt_type {
+	std::function<Shape::OptPoint()> SimpleLine::genFunc() const {
+		return[this, xp = 0, yp = 0, len_left = len]() mutable->OptPoint {
 			if (len_left-- > 0) {
-				base_type ret = { xp + x,yp + y };
+				Point ret = { xp + x,yp + y };
 				xp += dx, yp += dy;
 				return ret;
 			}
@@ -13,17 +13,18 @@ namespace shp {
 		};
 	}
 
-	std::function<Shape::opt_type()> Line::genFunc() const {
+	std::function<Shape::OptPoint()> Line::genFunc() const {
 		const int32_t dxa = abs(dx), dya = -abs(dy);
 		const int8_t sx = sgn(dx), sy = sgn(dy);
-		return[this, dxa, dya, sx, sy, xp = 0, yp = 0, err = dxa + dya,
-			endflag = false]() mutable->opt_type {
+		const int32_t x = this->x, y = this->y, dx = this->dx, dy = this->dy;
+		return[x, y, dx, dy, dxa, dya, sx, sy, xp = 0, yp = 0,
+			err = dxa + dya, endflag = false]() mutable->OptPoint {
 			if (endflag)
 				return std::nullopt;
 			if (xp == dx && yp == dy)
 				endflag = true;
 			const int32_t e2 = 2 * err;
-			base_type ret = { xp + x,yp + y };
+			Point ret = { xp + x,yp + y };
 
 			if (e2 >= dya) {
 				err += dya;
@@ -37,9 +38,9 @@ namespace shp {
 		};		
 	}
 
-	std::function<Shape::opt_type()> Rectangle::genFunc() const	{
-		return[this, xp = 0, yp = 0]() mutable->opt_type {
-			base_type ret{ x + xp,y + yp };
+	std::function<Shape::OptPoint()> Rectangle::genFunc() const	{
+		return[this, xp = 0, yp = 0]() mutable->OptPoint {
+			Point ret{ x + xp,y + yp };
 
 			if (yp >= dy)
 				return std::nullopt;
@@ -53,68 +54,68 @@ namespace shp {
 		};
 	}
 
-	std::function<Shape::opt_type()> FilledRectangle::genFunc() const {
-		return[this, xp = 0, yp = 0]() mutable->opt_type {
+	std::function<Shape::OptPoint()> FilledRectangle::genFunc() const {
+		return[this, xp = 0, yp = 0]() mutable->OptPoint {
 			if (xp >= dx) {
 				xp = 0;
 				yp++;
 			}
 			if (yp >= dy)
 				return std::nullopt;
-			return base_type(x + xp++, y + yp);
+			return Point(x + xp++, y + yp);
 		};
 	}
 
-	std::function<Shape::opt_type()> Circle::genFunc() const {
+	std::function<Shape::OptPoint()> Circle::genFunc() const {
 		const double angle_inc = tau / (base_density * r);
 		const double half_step = angle_inc / 2;
 
-		return[this, angle_inc, half_step, angle = -half_step]() mutable->opt_type {
+		return[this, angle_inc, half_step, angle = -half_step]() mutable->OptPoint {
 			if ((angle += angle_inc) > tau + half_step)
 				return std::nullopt;
-			return base_type(rnd(r * cos(angle)) + x, rnd(r * sin(angle)) + y);
+			return Point(rnd(r * cos(angle)) + x, rnd(r * sin(angle)) + y);
 		};
 	}
 
-	std::function<Shape::opt_type()> FilledCircle::genFunc() const {
-		return[this, xp = -r, yp = -r]() mutable->opt_type {
+	std::function<Shape::OptPoint()> FilledCircle::genFunc() const {
+		return[this, xp = -r, yp = -r]() mutable->OptPoint {
 			for (; yp <= r; ++xp) {
 				if (xp > r) {
 					xp = -r;
 					yp++;
 				}
 				if (xp * xp + yp * yp <= r * r)
-					return base_type(x + xp++, y + yp);
+					return Point(x + xp++, y + yp);
 			}
 			return std::nullopt;
 		};
 	}
 
-	std::function<Shape::opt_type()> Ellipse::genFunc() const {
+	std::function<Shape::OptPoint()> Ellipse::genFunc() const {
 		const double angle_inc = tau / (base_density * std::max(rx, ry));
 		const double half_step = angle_inc / 2;
 		const double sinr = sin(rotation), cosr = cos(rotation);
 
-		return[this, angle_inc, half_step, sinr, cosr, angle = -half_step]() mutable->opt_type {
+		return[this, angle_inc, half_step, sinr, cosr, angle = -half_step]() mutable->OptPoint {
 			if ((angle += angle_inc) > tau + half_step)
 				return std::nullopt;
 
 			const double
 				xp = rx * cos(angle),
 				yp = ry * -sin(angle);
-			return base_type(rnd(xp * cosr + yp * sinr) + x, rnd(yp * cosr - xp * sinr) + y);
+			return Point(rnd(xp * cosr + yp * sinr) + x, rnd(yp * cosr - xp * sinr) + y);
 		};
 	}
 
-	std::function<Shape::opt_type()> FilledEllipse::genFunc() const {
+	std::function<Shape::OptPoint()> FilledEllipse::genFunc() const {
 		const double sinr = -sin(rotation), cosr = cos(rotation);
 		const int32_t limit = std::max(rx, ry);
-		return[this, sinr, cosr, limit, xp = -limit, yp = -limit]() mutable->opt_type {
+		return[this, sinr, cosr, limit, xp = -limit, yp = -limit]() mutable->OptPoint {
 			while (yp <= limit) {
 				while (xp <= limit) {
 					const double xr = xp * cosr + yp * sinr, yr = yp * cosr - xp * sinr;
 					if (xr * xr / rx / rx + yr * yr / ry / ry <= 1)
-						return base_type(xp++ + x, yp + y);
+						return Point(xp++ + x, yp + y);
 					xp++;
 				}
 				xp = -rx;
@@ -124,19 +125,19 @@ namespace shp {
 		};
 	}
 
-	std::function<Shape::opt_type()> Arc::genFunc() const {
+	std::function<Shape::OptPoint()> Arc::genFunc() const {
 		const double angle_inc = tau / (base_density * std::max(rx, ry));
 
-		return[this, angle_inc, angle = angle_min - angle_inc]() mutable->opt_type {
+		return[this, angle_inc, angle = angle_min - angle_inc]() mutable->OptPoint {
 			if ((angle += angle_inc) > angle_max)
 				return std::nullopt;
 
 			const double
 				xp = rx * cos(angle),
 				yp = ry * -sin(angle),
-				sinr = sin(rotation),
-				cosr = cos(rotation);
-			return base_type(rnd(xp * cosr + yp * sinr) + x, rnd(yp * cosr - xp * sinr) + y);
+				sinr = sin(angle),
+				cosr = cos(angle);
+			return Point(rnd(xp * cosr + yp * sinr) + x, rnd(yp * cosr - xp * sinr) + y);
 		};
 	}
 
@@ -147,62 +148,30 @@ namespace shp {
 		return ret;
 	}
 
-	CompositeShape::comp_iterator CompositeShape::composite() const {
-		std::vector<comp_iterator::IterPair> iters;
-		for (auto &comp : components)
-			iters.push_back({ comp->begin(), comp->end() });
-		return comp_iterator(std::move(iters));
+	Line Polyline::part(uint32_t index) const {
+		return Line{ Point(pts[index]), Point(pts[(index + 1) % pts.size()]) };
 	}
 
-	std::function<Shape::opt_type()> CompositeShape::genFunc() const {
-		return[it = composite(), end_it = comp_iterator()]() mutable->opt_type {
-			if (it == end_it)
-				return std::nullopt;
-			return *it++;
-		};
-	}
-
-	CompositeShape Polyline::materialize() const {
-		CompositeShape ret{};
-
-		for (uint32_t i = 1; i < pts.size(); ++i) {
-			ret.addShape(Line(
-				pts[i - 1].rotated(rotation).round<int32_t>(),
-				pts[i].rotated(rotation).round<int32_t>()
-			));
-		}
-
-		return ret;
-	}
-
-	std::function<Shape::opt_type()> Polyline::genFunc() const {
-		return[lines = materialize(), it = iterator(), end_it = iterator(), rdy = false]() mutable->opt_type {
-			if (!rdy) {
-				it = lines.begin();
-				rdy = true;
+	std::function<Shape::OptPoint()> Polyline::genFunc() const {
+		auto it{ iterator() }, end_it{ iterator() };
+		return [this, it, end_it, index = -1, line = part(0)]() mutable->OptPoint {
+			if (it == end_it) {
+				if (++index == iterLimit)
+					return std::nullopt;
+				line = part(index);
+				it = line.begin();
 			}
-			if (it == end_it)
-				return std::nullopt;
 			return *it++;
 		};
 	}
 
-	CompositeShape Polygon::materialize() const {
-		CompositeShape ret = Polyline::materialize();
-		ret.addShape(Line(
-			pts.front().rotated(rotation).round<int32_t>(),
-			pts.back().rotated(rotation).round<int32_t>()
-		));
-		return ret;
-	}
-
-	std::function<Shape::opt_type()> FilledPolygon::genFunc() const {
+	std::function<Shape::OptPoint()> FilledPolygon::genFunc() const {
 		Boundary br = boundingRect();
-		return[this, br, xp = br.xm, yp = br.ym]() mutable->opt_type {
+		return[this, br, xp = br.xm, yp = br.ym]() mutable->OptPoint {
 			while (yp <= br.yM) {
 				while (xp <= br.xM) {
-					if (evenOddRule(xp, yp))
-						return base_type(x + xp++, y + yp);
+					if (fillCondition(xp, yp))
+						return Point(x + xp++, y + yp);
 					xp++;
 				}
 				xp = br.xm;
@@ -212,7 +181,7 @@ namespace shp {
 		};
 	}
 
-	bool FilledPolygon::evenOddRule(int32_t x, int32_t y, bool include_border) const {
+	bool FilledPolygon::fillCondition(int32_t x, int32_t y, bool include_border) const {
 		bool ret = false;
 
 		for (int32_t i = 0, j = (int32_t)pts.size() - 1; i < (int32_t)pts.size(); j = i++) {
@@ -225,15 +194,16 @@ namespace shp {
 					(y - pti.y) * (ptj.x - pti.x);
 				if (slope == 0)
 					return include_border;
-				if ((slope < 0) ^ (ptj.y < pti.y))
+				if ((slope < 0) ^ (ptj.y < pti.y)) {
 					ret = !ret;
+				}
 			}
 		}
 
 		return ret;
 	}
 
-	Shape::Boundary Shape::pointSeqBoundary(const interm_type *data, std::size_t cnt) {
+	Shape::Boundary Shape::pointSeqBoundary(const PointF *data, std::size_t cnt) {
 		double
 			xm = +INFINITY, xM = -INFINITY,
 			ym = +INFINITY, yM = -INFINITY;
@@ -260,6 +230,7 @@ namespace shp {
 		pts.reserve(sides);
 		for (double angle = angle_init; sides--; angle += angle_inc)
 			pts.emplace_back(x + radius * cos(angle), y + radius * sin(angle));
+		axis = { x,y };
 	}
 
 	PolyBase::PolyBase(int32_t x, int32_t y, const std::vector<int32_t> &radii,
@@ -275,13 +246,43 @@ namespace shp {
 				angle += angle_inc;
 			}
 		}
-
+		axis = { x,y };
 	}
 
-	PolyBase &PolyBase::rotate(double rotation) {
-		Rotatable::rotate(rotation);
+	PolyBase &PolyBase::rotate(double angle) {
+		return rotate(angle, defaultAxis());
+	}
+
+	PolyBase &PolyBase::rotate(double angle, Point axis)	{
 		for (auto &p : pts)
-			p = p.rotated(rotation);
+			p = p.rotated(angle, axis);
+		return *this;
+	}
+
+	PolyBase &PolyBase::ravel(int32_t times) {
+		const int32_t n = static_cast<int32_t>(pts.size());
+		auto newvec = std::vector<PointF>(n);
+
+		times = times % n;
+		for (int32_t i = 0, index = 0; i < n; ++i) {
+			newvec[i] = pts[index];
+			index = (n + index + times) % n;
+		}
+		pts = newvec;
+		return *this;
+	}
+
+	Shape::Point PolyBase::defaultAxis() const {
+		return axis ? *axis : Shape::defaultAxis();
+	}
+
+	CompositeShape &CompositeShape::rotate(double angle) {
+		return rotate(angle, defaultAxis());
+	}
+
+	CompositeShape &CompositeShape::rotate(double angle, Point axis) {
+		for (const auto &comp : components)
+			comp->rotate(angle, axis);
 		return *this;
 	}
 }

@@ -5,21 +5,26 @@
 #include <memory>
 #include <numeric>
 #include "common.hpp"
+#include "iterators.hpp"
 
-//#include <iostream>
+#include <iostream>
 
 namespace shp {
 
 	class Shape {
 	public:
-		using base_type = Pos<int32_t>;
-		using iterator = GeneratorIterator<base_type>;
-		using opt_type = iterator::optional;
-		using interm_type = Pos<double>;
+		using Point = Pos<int32_t>;
+		using PointF = Pos<double>;
+		using BaseIter = GeneratorIterator<Point>;
+		using iterator = CompositeIterator<BaseIter>;
+		using OptPoint = std::optional<Point>;
 		struct Boundary {
 			int32_t 
 				xm = INT32_MAX, ym = INT32_MAX,
 				xM = INT32_MIN, yM = INT32_MIN;
+
+			inline Point middle() const { return { (xM + xm) / 2, (yM - ym) / 2 }; }
+
 			Boundary operator|=(const Boundary &other) {
 				xm = std::min(xm, other.xm), ym = std::min(ym, other.ym);
 				xM = std::max(xM, other.xM), yM = std::max(yM, other.yM);
@@ -27,16 +32,31 @@ namespace shp {
 			}
 		};
 				
-		inline iterator begin() const { return iterator(genFunc()); };
+		inline iterator begin() const { return iterator(underlyingIters()); };
 		inline iterator end() const { return iterator(); }
 		virtual std::unique_ptr<Shape> copy() const = 0;
 
 		virtual Boundary boundingRect() const = 0;
+		virtual inline Point defaultAxis() const { return boundingRect().middle(); }
 
 		inline Shape &translate(int32_t dx, int32_t dy) {
 			x += dx;
 			y += dy;
 			return *this;
+		}
+
+		virtual inline Shape &rotate(double angle) {
+			return rotate(angle, defaultAxis());
+		}
+
+		virtual inline Shape &rotate(double angle, Point axis) {
+			const auto [px, py] = Point(x, y).rotated(angle, axis).unpack();
+			x = px, y = py;
+			return *this;
+		}
+
+		virtual inline std::vector<iterator::IterPair> underlyingIters() const {
+			return { iterator::IterPair{ BaseIter(genFunc()), BaseIter() } };
 		}
 
 		virtual ~Shape() = default;
@@ -47,20 +67,10 @@ namespace shp {
 		Shape() : x(0), y(0) {};
 		Shape(int32_t x, int32_t y) : x(x), y(y) {}
 
-		// iterator templates are dumb so this uses a raw pointer
-		static Boundary pointSeqBoundary(const interm_type *data, std::size_t cnt);
+		// iterator templates are dumb so this uses a raw Pointer
+		static Boundary pointSeqBoundary(const PointF *data, std::size_t cnt);
 
-		virtual std::function<opt_type()> genFunc() const = 0;
-	};
-
-	class Rotatable {
-	protected:
-		double rotation;
-	public:
-		Rotatable() : rotation(0.) {}
-		Rotatable(double rotation) : rotation(rotation) {}
-
-		virtual inline Rotatable &rotate(double angle) { rotation += angle; return *this; }
+		virtual std::function<OptPoint()> genFunc() const = 0;
 	};
 
 	class RectBase : public Shape {
@@ -69,22 +79,34 @@ namespace shp {
 	public:
 		RectBase(int32_t x, int32_t y, int32_t w, int32_t h) :
 			Shape(x, y), dx(w), dy(h) {}
-		RectBase(base_type p0, base_type p1) :
+		RectBase(Point p0, Point p1) :
 			RectBase(p0.x, p0.y, p1.x - p0.x, p1.y - p0.y) {}
 
 		virtual inline Boundary boundingRect() const override { return { x,y,x+dx,y+dy }; }
 	};
 
-	class EllipseBase : public Shape, public Rotatable {
+	class EllipseBase : public Shape {
 	protected:
 		int32_t rx, ry;
+		double rotation;
 	public:
 		EllipseBase(int32_t x, int32_t y, int32_t rx, int32_t ry, double rotation = 0.) :
-			Shape(x, y), Rotatable(rotation), rx(rx), ry(ry) {}
+			Shape(x, y), rx(rx), ry(ry), rotation(rotation) {}
 
 		virtual inline Boundary boundingRect() const override {
 			int32_t maxr = std::max(rx, ry);
 			return { x - maxr, y - maxr, x + maxr, y + maxr };
+		}
+
+		virtual inline EllipseBase &rotate(double angle) override {
+			rotation += angle;
+			return *this;
+		}
+
+		virtual inline EllipseBase &rotate(double angle, Point axis) override {
+			Shape::rotate(angle, axis);
+			rotation += angle;
+			return *this;
 		}
 	};
 
@@ -99,22 +121,26 @@ namespace shp {
 		}
 	};
 
-	class PolyBase : public Shape, public Rotatable {
+	class PolyBase : public Shape {
 	protected:
-		std::vector<interm_type> pts{};
+		std::vector<PointF> pts{};
+		std::optional<Point> axis = std::nullopt;
 	public:
-		PolyBase(const std::vector<interm_type> &pts) :
-			Shape(), Rotatable(), pts(pts) {}
+		PolyBase(const std::vector<PointF> &pts) :
+			Shape(), pts(pts) {}
 		PolyBase(int32_t x, int32_t y, int32_t radius, int32_t sides);
 		PolyBase(int32_t x, int32_t y, const std::vector<int32_t> &radii,
 			int32_t repeats);
 
-		virtual PolyBase &rotate(double rotation) override;
-		//virtual PolyBase &ravel(uint32_t times);
+		PolyBase &rotate(double angle) override;
+		PolyBase &rotate(double angle, Point axis) override;
+		PolyBase &ravel(int32_t times);
 
 		inline Boundary boundingRect() const override {
 			return pointSeqBoundary(pts.data(), pts.size());
 		};
+
+		Point defaultAxis() const override;
 	};
 
 	class SimpleLine : public Shape {
@@ -129,7 +155,7 @@ namespace shp {
 			return std::make_unique<SimpleLine>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 
 		virtual inline Boundary boundingRect() const override {
 			return { 
@@ -146,13 +172,13 @@ namespace shp {
 		int32_t dx, dy;
 	public:
 		Line(int32_t x0, int32_t y0, int32_t x1, int32_t y1) : Shape(x0, y0), dx(x1 - x0), dy(y1 - y0) {}
-		Line(base_type p0, base_type p1) : Line(p0.x, p0.y, p1.x, p1.y) {}
+		Line(Point p0, Point p1) : Line(p0.x, p0.y, p1.x, p1.y) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Line>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 
 		virtual inline Boundary boundingRect() const override {
 			return {
@@ -173,7 +199,7 @@ namespace shp {
 			return std::make_unique<Rectangle>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 	};
 	
 	class FilledRectangle : public RectBase {
@@ -185,7 +211,7 @@ namespace shp {
 			return std::make_unique<FilledRectangle>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 	};
 
 	class Circle : public CircleBase {
@@ -196,7 +222,7 @@ namespace shp {
 			return std::make_unique<Circle>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 	};
 
 	class FilledCircle : public CircleBase {
@@ -207,7 +233,7 @@ namespace shp {
 			return std::make_unique<FilledCircle>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 	};
 
 	class Arc : public EllipseBase {
@@ -222,7 +248,7 @@ namespace shp {
 			return std::make_unique<Arc>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 	};
 
 	class Ellipse : public EllipseBase {
@@ -234,7 +260,7 @@ namespace shp {
 			return std::make_unique<Ellipse>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 	};
 
 	class FilledEllipse : public EllipseBase {
@@ -246,12 +272,10 @@ namespace shp {
 			return std::make_unique<FilledEllipse>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 	};
 
 	class CompositeShape : public Shape {
-	public:
-		using comp_iterator = CompositeIterator<Shape::iterator>;
 	private:
 		std::vector<std::unique_ptr<Shape>> components{};
 	public:
@@ -266,7 +290,7 @@ namespace shp {
 				components.push_back(component->copy());
 		}
 
-		virtual void addShape(const Shape &shape) { 
+		virtual inline void addShape(const Shape &shape) { 
 			components.push_back(shape.copy());
 		};
 
@@ -275,51 +299,66 @@ namespace shp {
 		}
 
 		Boundary boundingRect() const override;
+		CompositeShape &rotate(double rotation) override;
+		CompositeShape &rotate(double rotation, Point axis) override;
+
+		inline std::vector<iterator::IterPair> underlyingIters() const override {
+			std::vector<iterator::IterPair> ret{};
+			for (const auto &comp : components)
+				for (const auto &iterPair : comp->underlyingIters())
+					ret.push_back(iterPair);
+			return ret;
+		}
+
+		inline const std::vector<std::unique_ptr<Shape>> &content() const {
+			return components;
+		}
 
 		template <typename T>
 		T& get(uint32_t index) {
 			return *dynamic_cast<T *>(components[index].get());
 		}
 	private:
-		comp_iterator composite() const;
-		std::function<opt_type()> genFunc() const override;
+		inline std::function<OptPoint()> genFunc() const override { return {}; }
 	};
 
 	class Polyline : public PolyBase {
+	protected:
+		int32_t iterLimit;
 	public:
-		Polyline(const std::vector<interm_type> &pts) : PolyBase(pts) {}
+		Polyline(const std::vector<PointF> &pts) :
+			PolyBase(pts), iterLimit(pts.size() - 1) {}
 		Polyline(int32_t x, int32_t y, int32_t radius, int32_t sides) :
-			PolyBase(x, y, radius, sides) {}
+			PolyBase(x, y, radius, sides), iterLimit(pts.size() - 1) {}
 		Polyline(int32_t x, int32_t y, const std::vector<int32_t> &radii,
-			int32_t repeats) : PolyBase(x, y, radii, repeats) {}
+			int32_t repeats) : PolyBase(x, y, radii, repeats),
+			iterLimit(pts.size() - 1) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polyline>(*this);
 		}
 
-		virtual CompositeShape materialize() const;
+		virtual Line part(uint32_t index) const;
 	private:
-		std::function<opt_type()> genFunc() const override;
+		std::function<OptPoint()> genFunc() const override;
 	};
 	
 	class Polygon : public Polyline {
 	public:
-		Polygon(const std::vector<interm_type> &pts) : Polyline(pts) {}
+		Polygon(const std::vector<PointF> &pts) : Polyline(pts) { ++iterLimit; }
 		Polygon(int32_t x, int32_t y, int32_t radius, int32_t sides) :
-			Polyline(x, y, radius, sides) {}
+			Polyline(x, y, radius, sides) { ++iterLimit; }
 		Polygon(int32_t x, int32_t y, const std::vector<int32_t> &radii,
-			int32_t repeats) : Polyline(x, y, radii, repeats) {}
+			int32_t repeats) : Polyline(x, y, radii, repeats) { ++iterLimit; }
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polygon>(*this);
 		}
-
-		virtual CompositeShape materialize() const override;
 	};	
 
 	class FilledPolygon : public PolyBase {
 	public:
-		FilledPolygon(const std::vector<interm_type> &pts) : PolyBase(pts) {}
+		FilledPolygon(const std::vector<PointF> &pts) : PolyBase(pts) {}
 		FilledPolygon(int32_t x, int32_t y, int32_t radius, int32_t sides) :
 			PolyBase(x, y, radius, sides) {}
 		FilledPolygon(int32_t x, int32_t y, const std::vector<int32_t> &radii,
@@ -329,37 +368,73 @@ namespace shp {
 			return std::make_unique<FilledPolygon>(*this);
 		}
 	private:
-		std::function<opt_type()> genFunc() const override;
-		bool evenOddRule(int32_t x, int32_t y, bool include_border = false) const;
+		std::function<OptPoint()> genFunc() const override;
+		bool fillCondition(int32_t x, int32_t y, bool include_border = false) const;
 	};
 
+	class Character : public CompositeShape {
+	public:
+		const char chr;
+
+		Character(char c, std::initializer_list<std::reference_wrapper<Shape>> shapes) :
+			CompositeShape(shapes), chr(c) {}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<Character>(*this);
+		}
+	};
+
+	class String : public CompositeShape {
+	private:
+		std::string asciiStr{};
+	public:
+		String() {}	
+
+		inline const std::string &str() const { return asciiStr; }
+		
+		// shape parameter must be an instance of Character
+		void addShape(const Shape &shape) override {
+			// shape HAS to be a Character so reinterpret_cast should be enough
+			asciiStr += reinterpret_cast<const Character *>(&shape)->chr;
+			CompositeShape::addShape(shape);
+		};
+
+		Character& operator[](uint32_t index) {
+			return get<Character>(index);
+		}
+	};
 
 	template <std::size_t N>
 	class BezierCurve : public Shape {
 	private:
-		std::array<interm_type, N + 1> pts;
+		std::array<PointF, N + 1> pts;
 		std::array<int32_t, N + 1> coeffs = getCoeffs();
 		double maxdist;
 	public:
-		BezierCurve(std::array<interm_type, N + 1> &&pts) : pts(pts) {
+		BezierCurve(std::array<PointF, N + 1> &&pts) : pts(pts) {
 			initMaxDist();
 		}
-		BezierCurve(const std::vector<interm_type> &vec) {
+		BezierCurve(const std::vector<PointF> &vec) {
 			std::copy(vec.begin(), vec.begin() + N + 1, pts.begin());
 			initMaxDist();
 		}
-
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<BezierCurve>(*this);
 		}
 
-		virtual Boundary boundingRect() const override {
+		BezierCurve &rotate(double angle, Point axis) override {
+			for (auto &p : pts)
+				p = p.rotated(angle);
+			return *this;
+		}
+
+		Boundary boundingRect() const override {
 			return pointSeqBoundary(pts.data(), pts.size());
 		}
 	private:
-		std::function<opt_type()> genFunc() const override {
+		std::function<OptPoint()> genFunc() const override {
 			const double step = 1. / (maxdist * base_density);
-			return[this, step, t = -step]() mutable->opt_type {
+			return[this, step, t = -step]() mutable->OptPoint {
 				if ((t += step) > 1)
 					return std::nullopt;
 				if (t == 0.)
@@ -367,13 +442,13 @@ namespace shp {
 				if (t == 1.)
 					return pts.back().round<int32_t>();
 
-				interm_type point{ 0,0 };
+				PointF Point{ 0,0 };
 				for (std::size_t i = 0; i <= N; ++i) {
 					const double mult = std::pow(t, i) * std::pow(1 - t, N - i) * coeffs[i];
-					point += pts[i] * mult;
+					Point += pts[i] * mult;
 				}
 
-				return point.round<int32_t>();
+				return Point.round<int32_t>();
 			};
 		}
 
