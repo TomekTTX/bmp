@@ -116,13 +116,61 @@ namespace bmp {
 	private:
 		std::vector<Color> colors;
 	public:
-		RandomChoice(const std::vector<Color> &col) : colors(col) {
+		RandomChoice(const std::vector<Color> &cols) : colors(cols) {
 			if (colors.empty())
 				colors.emplace_back();
 		}
 
 		inline Color get(int32_t x, int32_t y) const override {
 			return colors[rng.integer(colors.size())];
+		}
+	};
+
+	class RandomSingleColor : public ColorProvider {
+	private:
+		Color color;
+	public:
+		RandomSingleColor() : color(rng.integer()) {}
+
+		inline Color get(int32_t x, int32_t y) const override {
+			return color;
+		}
+	};
+
+	class Progression : public ColorProvider {
+	private:
+		std::vector<Color> colors;
+		double step;
+		mutable double state = 0.;
+	public:
+		Progression(const std::vector<Color> &cols, double step) :
+			colors(cols), step(step) {
+			if (colors.empty())
+				colors.emplace_back();
+		}
+
+		void advance() const {
+			state = std::fmod(state + step, colors.size());
+		}
+
+		inline Color get(int32_t x, int32_t y) const override {
+			const int32_t index1 = static_cast<int32_t>(state);
+			const int32_t index2 = (index1 + 1) % colors.size();
+			const double frac = state - index1;
+
+			return colors[index1].blend(colors[index2], frac, 1.);
+		}
+	};
+
+	class AutoProgression : public Progression {
+	public:
+		AutoProgression(const std::vector<Color> &cols, double step) :
+			Progression(cols, step) {}
+
+		inline Color get(int32_t x, int32_t y) const override {
+			Color ret = Progression::get(x, y);
+			advance();
+			return ret;
 		}
 	};
 
