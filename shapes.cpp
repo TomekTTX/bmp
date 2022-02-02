@@ -1,4 +1,5 @@
 #include "shapes.hpp"
+#include "ascii.hpp"
 #include <cmath>
 
 namespace shp {
@@ -284,5 +285,30 @@ namespace shp {
 		for (const auto &comp : components)
 			comp->rotate(angle, axis);
 		return *this;
+	}
+
+	CharFactory Character::cf{};
+
+	Character::Character(char chr, int32_t x, int32_t y, double scaleX, double scaleY) : chr(chr) {
+		Character c = cf.make(chr, x, y, scaleX, scaleY);
+		for (const auto &comp : c.content())
+			addShape(*comp);
+	}
+
+	String::String(std::string_view str, const StringParams &params) : asciiStr(str) {
+		int32_t x = params.x, y = params.y;
+		const int32_t
+			dx = rnd(XYFactory::baseSizeX * params.scaleX) + params.interX,
+			dy = rnd(XYFactory::baseSizeY * params.scaleY) + params.interY;
+
+		for (char c : str) {
+			if (c == '\n') {
+				y += dy;
+				x = params.x;
+				continue;
+			}
+			addShape(Character(c, x, y, params.scaleX, params.scaleY));
+			x += dx;
+		}
 	}
 }

@@ -133,6 +133,15 @@ namespace bmp {
 			writeTo(file);
 	}
 
+	void BMP::drawLargePixel(int32_t x, int32_t y, int32_t size, Color color, bool firstPx) {
+		const int32_t middleInc = firstPx ? 1 : 2 * (size - 1);
+		for (int32_t xp = x - size; xp <= x + size; ++xp) {
+			drawPixel(xp, y - size, color);
+			drawPixel(xp, y + size, color);
+		}
+
+	}
+
 	void BMP::drawShape(const shp::Shape &shape, Color color, int32_t x, int32_t y) {
 		for (const auto &p : shape)
 			drawPixel(p.x + x, p.y + y, color);
@@ -433,29 +442,6 @@ namespace bmp {
 
 		fillEllipse(x, y, rx, ry, rotation, fill_color);
 		drawEllipse(x, y, rx, ry, rotation, line_color);
-	}
-
-	void BMP::drawAscii(char c, int32_t x, int32_t y, Color color, double scaleX, double scaleY) {
-		ascii_dispatch(c)(*this, x, y, color, scaleX, scaleY);
-	}
-
-	void BMP::drawString(const std::string_view &str, int32_t x, int32_t y,
-		Color color, double scaleX, double scaleY, int32_t interspace) {
-
-		const auto dims = ascii_dimensions(scaleX, scaleY);
-		int32_t xp = x, yp = y;
-		for (char c : str) {
-			switch (c) {
-			case '\n':
-				xp = x;
-				yp += dims.y + interspace + 1;
-				break;
-			default:
-				drawAscii(c, xp, yp, color, scaleX, scaleY);
-				xp += dims.x + interspace;
-				break;
-			}
-		}
 	}
 
 	void BMP::floodFill(int32_t x, int32_t y, const Color color) {

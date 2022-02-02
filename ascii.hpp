@@ -2,15 +2,6 @@
 #include "common.hpp"
 #include "shapes.hpp"
 
-namespace bmp {
-	class BMP;
-
-	using TextFunc = std::function<void(BMP &, int32_t, int32_t, Color, double, double)>;
-
-	TextFunc ascii_dispatch(char c);
-	Pos<int32_t> ascii_dimensions(double scaleX, double scaleY);
-}
-
 namespace shp {
 	class XYFactory {
 	public:
@@ -25,6 +16,9 @@ namespace shp {
 			gridXSize = sizeX; gridYSize = sizeY;
 		}
 
+		inline int32_t dx() const { return static_cast<int32_t>(lx(1.)) + 1; }
+		inline int32_t dy() const { return static_cast<int32_t>(ly(1.)) + 1; }
+
 		inline double x(double frac) const { return baseX + baseSizeX * scaleX * frac; }
 		inline double y(double frac) const { return baseY + baseSizeY * scaleY * frac; }
 		inline double lx(double frac) const { return baseSizeX * scaleX * frac; }
@@ -38,14 +32,14 @@ namespace shp {
 		inline double glx(double gridX1, double gridX2) const { return glx(gridX2 - gridX1); }
 		inline double gly(double gridY1, double gridY2) const { return gly(gridY2 - gridY1); }
 
-		inline Pos<double> topleft()	 { return { x(0.), y(0.) }; }
-		inline Pos<double> topright()	 { return { x(1.), y(0.) }; }
-		inline Pos<double> bottomleft()	 { return { x(0.), y(1.) }; }
-		inline Pos<double> bottomright() { return { x(1.), y(1.) }; }
-		inline Pos<double> middle()		 { return { x(.5), y(.5) }; }
+		inline Pos<double> topleft()	 const { return { x(0.), y(0.) }; }
+		inline Pos<double> topright()	 const { return { x(1.), y(0.) }; }
+		inline Pos<double> bottomleft()	 const { return { x(0.), y(1.) }; }
+		inline Pos<double> bottomright() const { return { x(1.), y(1.) }; }
+		inline Pos<double> middle()		 const { return { x(.5), y(.5) }; }
 
-		inline Pos<double> p(double gridX, double gridY) {
-			return { x(gridX / gridXSize), y(gridY / gridXSize) };
+		inline Pos<double> p(double gridX, double gridY) const {
+			return { x(gridX / gridXSize), y(gridY / gridYSize) };
 		}
 	};
 
@@ -54,7 +48,9 @@ namespace shp {
 		XYFactory xyf{};
 	public:
 		Character make(char c, int32_t x, int32_t y, double scaleX, double scaleY);
-		String make(std::string_view str, int32_t x, int32_t y, double scaleX, double scaleY);
+
+		inline int32_t dx() const { return xyf.dx(); }
+		inline int32_t dy() const { return xyf.dy(); }
 	private:
 		Character dispatch(char c) ;
 

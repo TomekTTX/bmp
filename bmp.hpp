@@ -138,6 +138,8 @@ namespace bmp {
 			drawPixel(rnd(x), rnd(y), cp);
 		}
 
+		void drawLargePixel(int32_t x, int32_t y, int32_t size, Color color, bool firstPx = false);
+
 		void drawShape(const shp::Shape &shape, Color color, int32_t x = 0, int32_t y = 0);
 		void drawShape(const shp::Shape &shape,	const ColorProvider &prov,
 			int32_t x = 0, int32_t y = 0);	
@@ -200,9 +202,9 @@ namespace bmp {
 		void drawFilledEllipse(int32_t x, int32_t y, int32_t rx, int32_t ry, double rotation,
 			Color line_color, Color fill_color);
 
-		void drawAscii(char c, int32_t x, int32_t y, Color color, double scaleX = 1, double scaleY = 1);
-		void drawString(const std::string_view &str, int32_t x, int32_t y,
-			Color color, double scaleX = 1, double scaleY = 1, int32_t interspace = 1);
+		//void drawAscii(char c, int32_t x, int32_t y, Color color, double scaleX = 1, double scaleY = 1);
+		//void drawString(const std::string_view &str, int32_t x, int32_t y,
+		//	Color color, double scaleX = 1, double scaleY = 1, int32_t interspace = 1);
 	private:
 		inline int32_t invY(int32_t y) const { return bih.biHeight - 1 - y; }
 		inline static bool ellipse_pred_int(int32_t x, int32_t y, int32_t rx, int32_t ry) {

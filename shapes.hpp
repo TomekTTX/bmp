@@ -7,7 +7,7 @@
 #include "common.hpp"
 #include "iterators.hpp"
 
-#include <iostream>
+//#include <iostream>
 
 namespace shp {
 
@@ -280,10 +280,12 @@ namespace shp {
 		std::vector<std::unique_ptr<Shape>> components{};
 	public:
 		CompositeShape() = default;
-		CompositeShape(std::initializer_list<std::reference_wrapper<Shape>> shapes) {
+		CompositeShape(std::vector<std::reference_wrapper<Shape>> shapes) {
 			for (const auto shape : shapes)
 				addShape(shape.get());
 		}
+		//CompositeShape(std::vector<std::unique_ptr<Shape>> &&shapes) :
+		//	components(shapes) {}
 		CompositeShape(const CompositeShape &other) {
 			components.reserve(other.components.size());
 			for (const auto &component : other.components)
@@ -372,12 +374,17 @@ namespace shp {
 		bool fillCondition(int32_t x, int32_t y, bool include_border = false) const;
 	};
 
+	class CharFactory;
+
 	class Character : public CompositeShape {
+	private:
+		static CharFactory cf;
 	public:
 		const char chr;
 
-		Character(char c, std::initializer_list<std::reference_wrapper<Shape>> shapes) :
-			CompositeShape(shapes), chr(c) {}
+		Character(char c, int32_t x, int32_t y, double scaleX = 1., double scaleY = 1.);
+		Character(char c, const std::vector<std::reference_wrapper<Shape>> &shapes) :
+			CompositeShape(shapes), chr(c) {}		
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Character>(*this);
@@ -386,16 +393,21 @@ namespace shp {
 
 	class String : public CompositeShape {
 	private:
+		struct StringParams {
+			int32_t x, y;
+			double scaleX = 1., scaleY = 1.;
+			int32_t interX = 1, interY = 1;
+		};
 		std::string asciiStr{};
 	public:
 		String() {}	
+		String(std::string_view str, const StringParams &params);
 
 		inline const std::string &str() const { return asciiStr; }
 		
 		// shape parameter must be an instance of Character
 		void addShape(const Shape &shape) override {
-			// shape HAS to be a Character so reinterpret_cast should be enough
-			asciiStr += reinterpret_cast<const Character *>(&shape)->chr;
+			asciiStr += dynamic_cast<const Character *>(&shape)->chr;
 			CompositeShape::addShape(shape);
 		};
 
