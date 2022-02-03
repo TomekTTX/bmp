@@ -30,7 +30,6 @@ public:
 	// this isn't ideal but GeneratorIterator is somewhat expensive to copy
 	const value_type *operator++(int) {
 		prev = state;
-		//auto copy = *this;
 		state = operation();
 		return &*prev;
 	}
@@ -75,9 +74,10 @@ public:
 			done = true;
 		}
 		else {
+			while (iters[index].begin == iters[index].end)
+				if (++index == iters.size())
+					return *this;
 			state = *iters[index].begin++;
-			if (iters[index].begin == iters[index].end)
-				++index;
 		}
 		return *this;
 	}
