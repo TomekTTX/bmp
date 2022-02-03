@@ -124,7 +124,7 @@ namespace shp {
 	Character CharFactory::make_comm() { return {'\0', {}}; }
 	Character CharFactory::make_mins() { return {'\0', {}}; }
 	Character CharFactory::make_peri() { return {'\0', {}}; }
-	Character CharFactory::make_slsh() { return {'\0', {}}; }
+	Character CharFactory::make_slsh() { return { '\0', {} }; }
 	Character CharFactory::make_0() { return {'\0', {}}; }
 	Character CharFactory::make_1() { return {'\0', {}}; }
 	Character CharFactory::make_2() { return {'\0', {}}; }
@@ -145,66 +145,164 @@ namespace shp {
 	Character CharFactory::make_A() {
 		xyf.setGrid(4, 20);
 		Polyline s1{ { xyf.p(0,20), xyf.p(2,0), xyf.p(4,20) } };
-		Polyline s2{ { xyf.p(1,11), xyf.p(3,11) } };
-		return Character{ 'A', {s1,s2} };
+		LineSet s2{ { xyf.p(1,11), xyf.p(3,11) } };
+		return {'A', {s1,s2}};
 	}
-	Character CharFactory::make_B() { return {'\0', {}}; }
-	Character CharFactory::make_C() { return {'\0', {}}; }
-	Character CharFactory::make_D() { return {'\0', {}}; }
-	Character CharFactory::make_E() { return {'\0', {}}; }
-	Character CharFactory::make_F() { return {'\0', {}}; }
-	Character CharFactory::make_G() { return {'\0', {}}; }
-	Character CharFactory::make_H() { return {'\0', {}}; }
-	Character CharFactory::make_I() { return {'\0', {}}; }
-	Character CharFactory::make_J() { return {'\0', {}}; }
-	Character CharFactory::make_K() { return {'\0', {}}; }
-	Character CharFactory::make_L() { return {'\0', {}}; }
-	Character CharFactory::make_M() { return {'\0', {}}; }
-	Character CharFactory::make_N() { return {'\0', {}}; }
-	Character CharFactory::make_O() { return {'\0', {}}; }
-	Character CharFactory::make_P() { return {'\0', {}}; }
-	Character CharFactory::make_Q() { return {'\0', {}}; }
-	Character CharFactory::make_R() { return {'\0', {}}; }
-	Character CharFactory::make_S() { return {'\0', {}}; }
-	Character CharFactory::make_T() { return {'\0', {}}; }
-	Character CharFactory::make_U() { return {'\0', {}}; }
-	Character CharFactory::make_V() { return {'\0', {}}; }
-	Character CharFactory::make_W() { return {'\0', {}}; }
-	Character CharFactory::make_X() { return {'\0', {}}; }
-	Character CharFactory::make_Y() { return {'\0', {}}; }
-	Character CharFactory::make_Z() { return {'\0', {}}; }
+	Character CharFactory::make_B() { 
+		xyf.setGrid(10,2);
+		LineSet s1{ { xyf.p(1,0), xyf.p(1,2) } };
+		BezierCurve<3> s2{ { xyf.p(1,0), xyf.p(11,0), xyf.p(11,1), xyf.p(1,1) } };
+		BezierCurve<3> s3{ { xyf.p(1,1), xyf.p(12,1), xyf.p(12,2), xyf.p(1,2) } };
+		return {'B', {s1,s2,s3}};
+	}
+	Character CharFactory::make_C() { 
+		xyf.setGrid(2, 2);
+		Arc s1{ xyf.gxi(1), xyf.gyi(1), xyf.glxi(1), xyf.glyi(1), xyf.ang(0.1), xyf.ang(0.9) };
+		return {'C', {s1}};
+	}
+	Character CharFactory::make_D() {
+		xyf.setGrid(10, 1);
+		LineSet s1{ { xyf.p(1,0), xyf.p(1,1) } };
+		BezierCurve<3> s2{ { xyf.p(1,0), xyf.p(12,0), xyf.p(12,1), xyf.p(1,1) } };
+		return {'D', {s1,s2}};
+	}
+	Character CharFactory::make_E() {
+		xyf.setGrid(10, 2);
+		Polyline s1{ { xyf.p(9,0), xyf.p(1,0), xyf.p(1,2), xyf.p(9,2) } };
+		LineSet s2{ { xyf.p(1,1), xyf.p(7,1) } };
+		return {'E', {s1,s2}};
+	}
+	Character CharFactory::make_F() {
+		xyf.setGrid(10, 2);
+		Polyline s1{ { xyf.p(9,0), xyf.p(1,0), xyf.p(1,2) } };
+		LineSet s2{ { xyf.p(1,1), xyf.p(7,1) } };
+		return {'F', {s1,s2}};
+	}
+	Character CharFactory::make_G() {
+		xyf.setGrid(10,10);
+		Arc s1{ xyf.gxi(5), xyf.gyi(5), xyf.glxi(5), xyf.glyi(5), xyf.ang(0.1), xyf.ang(0.9) };
+		Polyline s2{ { xyf.p(5,5), xyf.p(9,5), xyf.p(9,8) } };
+		return {'G', {s1,s2}};
+	}
+	Character CharFactory::make_H() {
+		xyf.setGrid(10,2);
+		LineSet s1{ { xyf.p(1,0), xyf.p(1,2), xyf.p(1,1), xyf.p(9,1), xyf.p(9,0), xyf.p(9,2) } };
+		return {'H', {s1}};
+	}
+	Character CharFactory::make_I() {
+		xyf.setGrid(4, 2);
+		LineSet s1{ { xyf.p(1,0), xyf.p(3,0), xyf.p(2,0), xyf.p(2,2), xyf.p(1,2), xyf.p(3,2) } };
+		return {'I', {s1}};
+	}
+	Character CharFactory::make_J() {
+		xyf.setGrid(8, 6);
+		LineSet s1{ { xyf.p(7,0), xyf.p(7,4) } };
+		Arc s2{ xyf.gxi(4), xyf.gyi(4), xyf.glxi(3), xyf.glyi(2), xyf.ang(0.6), xyf.ang(1.0) };
+		return {'J', {s1,s2}};
+	}
+	Character CharFactory::make_K() { return {'K', {}}; }
+	Character CharFactory::make_L() { return {'L', {}}; }
+	Character CharFactory::make_M() { return {'M', {}}; }
+	Character CharFactory::make_N() { return {'N', {}}; }
+	Character CharFactory::make_O() { return {'O', {}}; }
+	Character CharFactory::make_P() { return {'P', {}}; }
+	Character CharFactory::make_Q() { return {'Q', {}}; }
+	Character CharFactory::make_R() { return {'R', {}}; }
+	Character CharFactory::make_S() { return {'S', {}}; }
+	Character CharFactory::make_T() { return {'T', {}}; }
+	Character CharFactory::make_U() { return {'U', {}}; }
+	Character CharFactory::make_V() { return {'V', {}}; }
+	Character CharFactory::make_W() { return {'W', {}}; }
+	Character CharFactory::make_X() { return {'X', {}}; }
+	Character CharFactory::make_Y() { return {'Y', {}}; }
+	Character CharFactory::make_Z() { return {'Z', {}}; }
 	Character CharFactory::make_sqob() { return {'\0', {}}; }
 	Character CharFactory::make_bslh() { return {'\0', {}}; }
 	Character CharFactory::make_sqcb() { return {'\0', {}}; }
 	Character CharFactory::make_chev() { return {'\0', {}}; }
 	Character CharFactory::make_unds() { return {'\0', {}}; }
 	Character CharFactory::make_bqte() { return {'\0', {}}; }
-	Character CharFactory::make_a() { return {'\0', {}}; }
-	Character CharFactory::make_b() { return {'\0', {}}; }
-	Character CharFactory::make_c() { return {'\0', {}}; }
-	Character CharFactory::make_d() { return {'\0', {}}; }
-	Character CharFactory::make_e() { return {'\0', {}}; }
-	Character CharFactory::make_f() { return {'\0', {}}; }
-	Character CharFactory::make_g() { return {'\0', {}}; }
-	Character CharFactory::make_h() { return {'\0', {}}; }
-	Character CharFactory::make_i() { return {'\0', {}}; }
-	Character CharFactory::make_j() { return {'\0', {}}; }
-	Character CharFactory::make_k() { return {'\0', {}}; }
-	Character CharFactory::make_l() { return {'\0', {}}; }
-	Character CharFactory::make_m() { return {'\0', {}}; }
-	Character CharFactory::make_n() { return {'\0', {}}; }
-	Character CharFactory::make_o() { return {'\0', {}}; }
-	Character CharFactory::make_p() { return {'\0', {}}; }
-	Character CharFactory::make_q() { return {'\0', {}}; }
-	Character CharFactory::make_r() { return {'\0', {}}; }
-	Character CharFactory::make_s() { return {'\0', {}}; }
-	Character CharFactory::make_t() { return {'\0', {}}; }
-	Character CharFactory::make_u() { return {'\0', {}}; }
-	Character CharFactory::make_v() { return {'\0', {}}; }
-	Character CharFactory::make_w() { return {'\0', {}}; }
-	Character CharFactory::make_x() { return {'\0', {}}; }
-	Character CharFactory::make_y() { return {'\0', {}}; }
-	Character CharFactory::make_z() { return {'\0', {}}; }
+	Character CharFactory::make_a() {
+		xyf.setGrid(8, 9);
+		LineSet s1{ {xyf.p(7,3), xyf.p(7,9)} };
+		Ellipse s2{ xyf.gxi(4), xyf.gyi(6), xyf.glxi(3), xyf.glyi(3) };
+		return { 'a', {s1,s2} };
+	}
+	Character CharFactory::make_b() {
+		xyf.setGrid(8, 9);
+		LineSet s1{ {xyf.p(1,0), xyf.p(1,9)} };
+		Ellipse s2{ xyf.gxi(4), xyf.gyi(6), xyf.glxi(3), xyf.glyi(3) };
+		return {'b', {s1,s2}};
+	}
+	Character CharFactory::make_c() {
+		xyf.setGrid(8, 9);
+		Arc s1{ xyf.gxi(4), xyf.gyi(6), xyf.glxi(3), xyf.glyi(3), xyf.ang(0.1), xyf.ang(0.9) };
+		return {'c', {s1}}; 
+	}
+	Character CharFactory::make_d() {
+		xyf.setGrid(8, 9);
+		LineSet s1{ {xyf.p(7,0), xyf.p(7,9)} };
+		Ellipse s2{ xyf.gxi(4), xyf.gyi(6), xyf.glxi(3), xyf.glyi(3) };
+		return {'d', {s1,s2}}; 
+	}
+	Character CharFactory::make_e() {
+		xyf.setGrid(8, 9);
+		Arc s1{ xyf.gxi(4), xyf.gyi(6), xyf.glxi(3), xyf.glyi(3), xyf.ang(0.0), xyf.ang(0.9) };
+		LineSet s2{ {xyf.p(1,6), xyf.p(7,6)} };
+		return { 'e', {s1,s2} };
+	}
+	Character CharFactory::make_f() {
+		xyf.setGrid(8, 9);
+		LineSet s1{ { xyf.p(4,2), xyf.p(4,9)} };
+		LineSet s2{ { xyf.p(2,4), xyf.p(7,4)} };
+		Arc s3{ xyf.gxi(7), xyf.gyi(3), xyf.glxi(3), xyf.glyi(3), xyf.ang(0.25), xyf.ang(0.5) };
+		return {'f', {s1,s2,s3}}; 
+	}
+	Character CharFactory::make_g() {
+		xyf.setGrid(8, 9);
+		Ellipse s1{ xyf.gxi(4), xyf.gyi(6), xyf.glxi(3), xyf.glyi(3) };
+		LineSet s2{ { xyf.p(7,3), xyf.p(7,11) } };
+		Arc s3{ xyf.gxi(4), xyf.gyi(9), xyf.glxi(3), xyf.glyi(3), xyf.ang(0.6), xyf.ang(1.0) };
+		return { 'g', {s1,s2,s3} };
+	}
+	Character CharFactory::make_h() {
+		xyf.setGrid(8, 9);
+		LineSet s1{ { xyf.p(1,0), xyf.p(1,9), xyf.p(7,5), xyf.p(7,9) } };
+		Arc s2{ xyf.gxi(4), xyf.gyi(6), xyf.glxi(3), xyf.glyi(3), xyf.ang(0.0), xyf.ang(0.5) };
+		return {'h', {s1,s2}}; 
+	}
+	Character CharFactory::make_i() {
+		xyf.setGrid(8, 9);
+		Polyline s1{ { xyf.p(2,3.5), xyf.p(4,3.5), xyf.p(4,9) } };
+		LineSet s2{ { xyf.p(2,9), xyf.p(6,9) } };
+		FilledEllipse s3{ xyf.gxi(4), xyf.gyi(1), xyf.glxi(.25), xyf.glyi(.25) };
+		Pixel s4{ xyf.gxi(4), xyf.gyi(1) };
+		return {'i', {s1,s2,s3,s4}};
+	}
+	Character CharFactory::make_j() {
+		xyf.setGrid(8, 9);
+		Polyline s1{ { xyf.p(2,3.5), xyf.p(6,3.5), xyf.p(6,9) } };
+		Arc s2{ xyf.gxi(3.5), xyf.gyi(9), xyf.glxi(2.5), xyf.glyi(3), xyf.ang(0.6), xyf.ang(1.0) };
+		FilledEllipse s3{ xyf.gxi(4), xyf.gyi(1), xyf.glxi(.25), xyf.glyi(.25) };
+		Pixel s4{ xyf.gxi(4), xyf.gyi(1) };
+		return {'j', {s1,s2,s3,s4}};
+	}
+	Character CharFactory::make_k() { return {'k', {}}; }
+	Character CharFactory::make_l() { return {'l', {}}; }
+	Character CharFactory::make_m() { return {'m', {}}; }
+	Character CharFactory::make_n() { return {'n', {}}; }
+	Character CharFactory::make_o() { return {'o', {}}; }
+	Character CharFactory::make_p() { return {'p', {}}; }
+	Character CharFactory::make_q() { return {'q', {}}; }
+	Character CharFactory::make_r() { return {'r', {}}; }
+	Character CharFactory::make_s() { return {'s', {}}; }
+	Character CharFactory::make_t() { return {'t', {}}; }
+	Character CharFactory::make_u() { return {'u', {}}; }
+	Character CharFactory::make_v() { return {'v', {}}; }
+	Character CharFactory::make_w() { return {'w', {}}; }
+	Character CharFactory::make_x() { return {'x', {}}; }
+	Character CharFactory::make_y() { return {'y', {}}; }
+	Character CharFactory::make_z() { return {'z', {}}; }
 	Character CharFactory::make_cobr() { return {'\0', {}}; }
 	Character CharFactory::make_pipe() { return {'\0', {}}; }
 	Character CharFactory::make_ccbr() { return {'\0', {}}; }
