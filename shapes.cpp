@@ -127,17 +127,16 @@ namespace shp {
 	}
 
 	std::function<Shape::OptPoint()> Arc::genFunc() const {
-		const double angle_inc = tau / (base_density * std::max(rx, ry));
+		const double
+			angle_inc = tau / (base_density * std::max(rx, ry)),
+			sinr = sin(rotation),
+			cosr = cos(rotation);
 
-		return[this, angle_inc, angle = angle_min - angle_inc]() mutable->OptPoint {
+		return[this, angle_inc, sinr, cosr, angle = angle_min - angle_inc]() mutable->OptPoint {
 			if ((angle += angle_inc) > angle_max)
 				return std::nullopt;
+			const double xp = rx * cos(angle), yp = ry * -sin(angle);
 
-			const double
-				xp = rx * cos(angle),
-				yp = ry * -sin(angle),
-				sinr = sin(angle),
-				cosr = cos(angle);
 			return Point(rnd(xp * cosr + yp * sinr) + x, rnd(yp * cosr - xp * sinr) + y);
 		};
 	}
