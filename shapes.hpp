@@ -226,6 +226,9 @@ namespace shp {
 			return *this;
 		}
 
+		// TODO make this return a meaningful value
+		inline Boundary boundingRect() const override { return { x - 30,y - 30,x + 30,y + 30 }; }
+
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Parametric>(*this);
 		}
