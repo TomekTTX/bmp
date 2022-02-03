@@ -149,8 +149,9 @@ namespace bmp {
 				colors.emplace_back();
 		}
 
-		void advance() const {
+		const Progression &advance() const {
 			state = std::fmod(state + step, colors.size());
+			return *this;
 		}
 
 		inline Color get(int32_t x, int32_t y) const override {
