@@ -3,6 +3,17 @@
 #include <cmath>
 
 namespace shp {
+
+	std::function<Shape::OptPoint()> Pixel::genFunc() const	{
+		return[this, done = false]() mutable->OptPoint {
+			if (!done) {
+				done = true;
+				return Point(x, y);
+			}
+			return std::nullopt;
+		};
+	}
+
 	std::function<Shape::OptPoint()> SimpleLine::genFunc() const {
 		return[this, xp = 0, yp = 0, len_left = len]() mutable->OptPoint {
 			if (len_left-- > 0) {
@@ -37,6 +48,15 @@ namespace shp {
 			}
 			return ret;
 		};		
+	}
+
+	std::function<Shape::OptPoint()> Parametric::genFunc() const {
+		const double dt = 1 / (base_density * density);
+		return[this, dt, t = tm - dt]() mutable->OptPoint {
+			if ((t += dt) > tM)
+				return std::nullopt;
+			return Point(func(t).rotated(rotation));
+		};
 	}
 
 	std::function<Shape::OptPoint()> Rectangle::genFunc() const	{
@@ -148,15 +168,35 @@ namespace shp {
 		return ret;
 	}
 
-	Line Polyline::part(uint32_t index) const {
-		return Line{ Point(pts[index]), Point(pts[(index + 1) % pts.size()]) };
+	std::size_t LineSet::size() const {
+		return pts.size() / 2;
 	}
 
-	std::function<Shape::OptPoint()> Polyline::genFunc() const {
+	std::size_t Polyline::size() const {
+		return pts.size() - 1;
+	}
+
+	std::size_t Polygon::size() const {
+		return pts.size();
+	}
+
+	Line LineSet::part(uint32_t index) const {
+		return Line{ Point(pts[2 * index]), Point(pts[2 * index + 1]) };
+	}
+
+	Line Polyline::part(uint32_t index) const {
+		return Line{ Point(pts[index]), Point(pts[index + 1]) };
+	}
+
+	Line Polygon::part(uint32_t index) const {
+		return Line{ Point(pts[index]), Point(pts[(index + 1) % size()]) };
+	}
+
+	std::function<Shape::OptPoint()> LineSet::genFunc() const {
 		auto it{ iterator() }, end_it{ iterator() };
 		return [this, it, end_it, index = -1, line = part(0)]() mutable->OptPoint {
 			if (it == end_it) {
-				if (++index == iterLimit)
+				if (++index == size())
 					return std::nullopt;
 				line = part(index);
 				it = line.begin();

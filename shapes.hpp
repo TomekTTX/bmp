@@ -143,6 +143,19 @@ namespace shp {
 		Point defaultAxis() const override;
 	};
 
+	class Pixel : public Shape {
+	public:
+		Pixel(int32_t x, int32_t y) : Shape(x, y) {}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<Pixel>(*this);
+		}
+
+		inline Boundary boundingRect() const override { return { x,y,x,y }; }
+	private:
+		std::function<OptPoint()> genFunc() const override;
+	};
+
 	class SimpleLine : public Shape {
 	private:
 		int32_t len;
@@ -188,6 +201,36 @@ namespace shp {
 				std::max(y, y + dy),
 			};
 		}
+	};
+
+	class Parametric : public Shape {
+	private:
+		using ParamFunc = std::function<PointF(double)>;
+
+		double tm, tM, density, rotation = 0.;
+		ParamFunc func;
+	public:
+		Parametric(int32_t x, int32_t y, ParamFunc func,
+			double t_min, double t_max, double density = 1.) :
+			Shape(x, y), func(std::move(func)), tm(t_min), tM(t_max),
+			density(density) {}
+		
+		inline Parametric &rotate(double angle) override {
+			rotation += angle;
+			return *this;
+		}
+
+		inline Parametric &rotate(double angle, Point axis) override {
+			Shape::rotate(angle, axis);
+			rotation += angle;
+			return *this;
+		}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<Parametric>(*this);
+		}
+	private:
+		std::function<OptPoint()> genFunc() const override;
 	};
 
 	class Rectangle : public RectBase {
@@ -241,7 +284,7 @@ namespace shp {
 		double angle_min, angle_max;
 	public:
 		Arc(int32_t x, int32_t y, int32_t rx, int32_t ry,
-			double angle_min, double angle_max, double rotation) :
+			double angle_min, double angle_max, double rotation = 0.) :
 			EllipseBase(x, y, rx, ry, rotation), angle_min(angle_min), angle_max(angle_max) {}
 
 		std::unique_ptr<Shape> copy() const override {
@@ -324,38 +367,56 @@ namespace shp {
 		inline std::function<OptPoint()> genFunc() const override { return {}; }
 	};
 
-	class Polyline : public PolyBase {
-	protected:
-		int32_t iterLimit;
+	class LineSet : public PolyBase {
+	public:
+		LineSet(const std::vector<PointF> &pts) :
+			PolyBase(pts) {}
+		LineSet(int32_t x, int32_t y, int32_t radius, int32_t sides) :
+			PolyBase(x, y, radius, sides) {}
+		LineSet(int32_t x, int32_t y, const std::vector<int32_t> &radii,
+			int32_t repeats) : PolyBase(x, y, radii, repeats) {}
+
+		std::unique_ptr<Shape> copy() const override {
+			return std::make_unique<LineSet>(*this);
+		}
+
+		virtual std::size_t size() const;
+		virtual Line part(uint32_t index) const;
+	private:
+		std::function<OptPoint()> genFunc() const override;
+	};
+
+	class Polyline : public LineSet {
 	public:
 		Polyline(const std::vector<PointF> &pts) :
-			PolyBase(pts), iterLimit(pts.size() - 1) {}
+			LineSet(pts) {}
 		Polyline(int32_t x, int32_t y, int32_t radius, int32_t sides) :
-			PolyBase(x, y, radius, sides), iterLimit(pts.size() - 1) {}
+			LineSet(x, y, radius, sides) {}
 		Polyline(int32_t x, int32_t y, const std::vector<int32_t> &radii,
-			int32_t repeats) : PolyBase(x, y, radii, repeats),
-			iterLimit(pts.size() - 1) {}
+			int32_t repeats) : LineSet(x, y, radii, repeats) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polyline>(*this);
 		}
 
-		virtual Line part(uint32_t index) const;
-	private:
-		std::function<OptPoint()> genFunc() const override;
+		std::size_t size() const override;
+		Line part(uint32_t index) const override;
 	};
 	
-	class Polygon : public Polyline {
+	class Polygon : public LineSet {
 	public:
-		Polygon(const std::vector<PointF> &pts) : Polyline(pts) { ++iterLimit; }
+		Polygon(const std::vector<PointF> &pts) : LineSet(pts) {}
 		Polygon(int32_t x, int32_t y, int32_t radius, int32_t sides) :
-			Polyline(x, y, radius, sides) { ++iterLimit; }
+			LineSet(x, y, radius, sides) {}
 		Polygon(int32_t x, int32_t y, const std::vector<int32_t> &radii,
-			int32_t repeats) : Polyline(x, y, radii, repeats) { ++iterLimit; }
+			int32_t repeats) : LineSet(x, y, radii, repeats) {}
 
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<Polygon>(*this);
 		}
+
+		std::size_t size() const override;
+		Line part(uint32_t index) const override;
 	};	
 
 	class FilledPolygon : public PolyBase {
@@ -396,7 +457,7 @@ namespace shp {
 		struct StringParams {
 			int32_t x, y;
 			double scaleX = 1., scaleY = 1.;
-			int32_t interX = 1, interY = 1;
+			int32_t interX = 3, interY = 3;
 		};
 		std::string asciiStr{};
 	public:
@@ -430,13 +491,14 @@ namespace shp {
 			std::copy(vec.begin(), vec.begin() + N + 1, pts.begin());
 			initMaxDist();
 		}
+
 		std::unique_ptr<Shape> copy() const override {
 			return std::make_unique<BezierCurve>(*this);
 		}
 
 		BezierCurve &rotate(double angle, Point axis) override {
 			for (auto &p : pts)
-				p = p.rotated(angle);
+				p = p.rotated(angle, axis);
 			return *this;
 		}
 
@@ -454,13 +516,13 @@ namespace shp {
 				if (t == 1.)
 					return pts.back().round<int32_t>();
 
-				PointF Point{ 0,0 };
+				PointF point{ 0,0 };
 				for (std::size_t i = 0; i <= N; ++i) {
 					const double mult = std::pow(t, i) * std::pow(1 - t, N - i) * coeffs[i];
-					Point += pts[i] * mult;
+					point += pts[i] * mult;
 				}
 
-				return Point.round<int32_t>();
+				return point.round<int32_t>();
 			};
 		}
 
