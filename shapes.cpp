@@ -55,7 +55,7 @@ namespace shp {
 		return[this, dt, t = tm - dt]() mutable->OptPoint {
 			if ((t += dt) > tM)
 				return std::nullopt;
-			return Point(func(t).rotated(rotation));
+			return Point(func(t).rotated(rotation)) + Point(x, y);
 		};
 	}
 
@@ -334,7 +334,7 @@ namespace shp {
 			addShape(*comp);
 	}
 
-	String::String(std::string_view str, const StringParams &params) : asciiStr(str) {
+	String::String(std::string_view str, const StringParams &params) : asciiStr() {
 		int32_t x = params.x, y = params.y;
 		const int32_t
 			dx = rnd(XYFactory::baseSizeX * params.scaleX) + params.interX,

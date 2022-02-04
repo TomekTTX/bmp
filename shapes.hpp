@@ -456,12 +456,13 @@ namespace shp {
 	};
 
 	class String : public CompositeShape {
-	private:
+	public:
 		struct StringParams {
 			int32_t x, y;
 			double scaleX = 1., scaleY = 1.;
 			int32_t interX = 3, interY = 3;
 		};
+	private:
 		std::string asciiStr{};
 	public:
 		String() {}	
