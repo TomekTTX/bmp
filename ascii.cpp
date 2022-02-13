@@ -105,26 +105,87 @@ namespace shp {
 			case '|': return make_pipe();
 			case '}': return make_ccbr();
 			case '~': return make_tild();
-			default: return { c,{} };
+			case 7:   return make_bell();
+			default: return { c, {} };
 		}
 	}
 
+	Parametric::ParamFunc sfunc(double w, double h) {
+		return [w, h](double t)->Shape::PointF {
+			return { -sin(2 * t) * w, cos(t) * abs(cos(t)) * h };
+		};
+	}
 
-	Character CharFactory::make_excl() { return {'\0', {}}; }
-	Character CharFactory::make_quot() { return {'\0', {}}; }
-	Character CharFactory::make_hash() { return {'\0', {}}; }
-	Character CharFactory::make_dolr() { return {'\0', {}}; }
-	Character CharFactory::make_perc() { return {'\0', {}}; }
-	Character CharFactory::make_amps() { return {'\0', {}}; }
-	Character CharFactory::make_apos() { return {'\0', {}}; }
-	Character CharFactory::make_robr() { return {'\0', {}}; }
-	Character CharFactory::make_rcbr() { return {'\0', {}}; }
-	Character CharFactory::make_astr() { return {'\0', {}}; }
-	Character CharFactory::make_plus() { return {'\0', {}}; }
-	Character CharFactory::make_comm() { return {'\0', {}}; }
-	Character CharFactory::make_mins() { return {'\0', {}}; }
-	Character CharFactory::make_peri() { return {'\0', {}}; }
-	Character CharFactory::make_slsh() { return { '\0', {} }; }
+	Character CharFactory::make_excl() {
+		const Shape::PointF off{ 1,0 };
+		xyf.setGrid(2, 15);
+		LineSet s1{ { xyf.p(1,0), xyf.p(1,12), xyf.p(1,1) + off,
+			xyf.p(1,9) + off, xyf.p(1,1) - off, xyf.p(1,9) - off } };
+		FilledEllipse s2{ xyf.gxi(1), xyf.gyi(14.5), xyf.glyi(.5), xyf.glyi(.5) };
+		Pixel s3{ xyf.gxi(1), xyf.gyi(10) };
+		return { '!', {s1,s2,s3} };
+	}
+	Character CharFactory::make_quot() {
+		xyf.setGrid(12, 6);
+		LineSet s1{ { xyf.p(4,0), xyf.p(3,2), xyf.p(8,0), xyf.p(7,2)} };
+		return { '"', {s1} };
+	}
+	Character CharFactory::make_hash() {
+		xyf.setGrid(6, 6);
+		LineSet s1{ {
+			xyf.p(0,2), xyf.p(6,2), xyf.p(0,5), xyf.p(6,5),
+			xyf.p(2.5,0), xyf.p(1,6), xyf.p(5.5,0), xyf.p(4,6)
+		} };
+		return { '#', {s1} };
+	}
+	Character CharFactory::make_dolr() {
+		xyf.setGrid(10, 10);
+		const double w = xyf.glx(4), h = xyf.gly(4.5);
+		Parametric s1{ xyf.gxi(5), xyf.gyi(5), sfunc(w,h),
+			xyf.ang(0.4), xyf.ang(1.1), std::max(w,h) };
+		LineSet s2{ { xyf.p(5,0), xyf.p(5,10) } };
+		return { '$', {s1,s2} };
+	}
+	Character CharFactory::make_perc() {
+		xyf.setGrid(4, 4);
+		Ellipse s1{ xyf.gxi(0.8), xyf.gyi(0.8), xyf.glxi(0.7), xyf.glyi(0.7) };
+		Ellipse s2{ xyf.gxi(3.2), xyf.gyi(3.2), xyf.glxi(0.7), xyf.glyi(0.7) };
+		LineSet s3{ {xyf.p(4,0), xyf.p(0,4)} };
+		return { '%', {s1,s2,s3} };
+	}
+	Character CharFactory::make_amps() {
+		const double w = xyf.lx(0.4), h = xyf.ly(0.55);
+		Parametric s1{ xyf.xi(0.5), xyf.yi(0.5), sfunc(w,h),
+			xyf.ang(-0.1), xyf.ang(0.8), std::max(w,h) };
+		return { '&', {s1} };
+	}
+	Character CharFactory::make_apos() {
+		return { '\'', {} };
+	}
+	Character CharFactory::make_robr() {
+		return { '(', {} };
+	}
+	Character CharFactory::make_rcbr() {
+		return { ')', {} };
+	}
+	Character CharFactory::make_astr() {
+		return { '*', {} };
+	}
+	Character CharFactory::make_plus() {
+		return { '+', {} };
+	}
+	Character CharFactory::make_comm() {
+		return { ',', {} };
+	}
+	Character CharFactory::make_mins() {
+		return { '-', {} };
+	}
+	Character CharFactory::make_peri() {
+		return { '.', {} };
+	}
+	Character CharFactory::make_slsh() {
+		return { '/', {} };
+	}
 	Character CharFactory::make_0() { return {'\0', {}}; }
 	Character CharFactory::make_1() { return {'\0', {}}; }
 	Character CharFactory::make_2() { return {'\0', {}}; }
@@ -246,34 +307,46 @@ namespace shp {
 	}
 	Character CharFactory::make_S() {
 		const double w = xyf.lx(0.5), h = xyf.ly(0.55);
-		auto func = [w, h](double t)->Shape::PointF {
-			return { -sin(2 * t) * w, cos(t) * abs(cos(t)) * h };
-		};
-
-		Parametric s1{ xyf.xi(0.5), xyf.yi(0.5), func,
+		Parametric s1{ xyf.xi(0.5), xyf.yi(0.5), sfunc(w,h),
 			xyf.ang(0.4), xyf.ang(1.1), std::max(w,h) };
 		return { 'S', {s1} };
 	}
 	Character CharFactory::make_T() {
-		return { 'T', {} };
+		xyf.setGrid(10, 1);
+		LineSet s1{ { xyf.p(1,0), xyf.p(9,0), xyf.p(5,0), xyf.p(5,1) } };
+		return { 'T', {s1} };
 	}
 	Character CharFactory::make_U() {
-		return { 'U', {} };
+		xyf.setGrid(10, 10);
+		LineSet s1{ { xyf.p(1,0), xyf.p(1,6), xyf.p(9,0), xyf.p(9,6) } };
+		BezierCurve<3> s2{ { xyf.p(1,6), xyf.p(2,11.5), xyf.p(8,11.5), xyf.p(9,6) } };
+		return { 'U', {s1,s2} };
 	}
 	Character CharFactory::make_V() {
-		return { 'V', {} };
+		xyf.setGrid(10, 1);
+		Polyline s1{ { xyf.p(1,0), xyf.p(5,1), xyf.p(9,0) } };
+		return { 'V', {s1} };
 	}
 	Character CharFactory::make_W() {
-		return { 'W', {} };
+		xyf.setGrid(4, 5);
+		Polyline s1{ { xyf.p(0,0), xyf.p(1,5), xyf.p(2,2), xyf.p(3,5), xyf.p(4,0) } };
+		return { 'W', {s1} };
 	}
 	Character CharFactory::make_X() {
-		return { 'X', {} };
+		xyf.setGrid(10, 1);
+		LineSet s1{ { xyf.p(1,0), xyf.p(9,1), xyf.p(9,0), xyf.p(1,1) } };
+		return { 'X', {s1} };
 	}
 	Character CharFactory::make_Y() {
-		return { 'Y', {} };
+		xyf.setGrid(10, 2);
+		Polyline s1{ { xyf.p(1,0), xyf.p(5,1), xyf.p(9,0) } };
+		LineSet s2{ { xyf.p(5,1), xyf.p(5,2) } };
+		return { 'Y', {s1,s2} };
 	}
 	Character CharFactory::make_Z() {
-		return { 'Z', {} };
+		xyf.setGrid(10, 1);
+		Polyline s1{ { xyf.p(1,0), xyf.p(9,0), xyf.p(1,1), xyf.p(9,1) } };
+		return { 'Z', {s1} };
 	}
 	Character CharFactory::make_sqob() { return {'\0', {}}; }
 	Character CharFactory::make_bslh() { return {'\0', {}}; }
@@ -312,10 +385,9 @@ namespace shp {
 	}
 	Character CharFactory::make_f() {
 		xyf.setGrid(8, 9);
-		LineSet s1{ { xyf.p(4,2), xyf.p(4,9)} };
-		LineSet s2{ { xyf.p(2,4), xyf.p(7,4)} };
-		Arc s3{ xyf.gxi(7), xyf.gyi(3), xyf.glxi(3), xyf.glyi(3), xyf.ang(0.25), xyf.ang(0.5) };
-		return {'f', {s1,s2,s3}}; 
+		LineSet s1{ { xyf.p(4,2), xyf.p(4,9), xyf.p(2,4), xyf.p(7,4) } };
+		Arc s2{ xyf.gxi(7), xyf.gyi(3), xyf.glxi(3), xyf.glyi(3), xyf.ang(0.25), xyf.ang(0.5) };
+		return {'f', {s1,s2}}; 
 	}
 	Character CharFactory::make_g() {
 		xyf.setGrid(8, 9);
@@ -396,25 +468,60 @@ namespace shp {
 	Character CharFactory::make_s() {
 		xyf.setGrid(8, 9);
 		const double w = xyf.glx(3), h = xyf.gly(3.3);
-		auto func = [w, h](double t)->Shape::PointF {
-			return { -sin(2 * t) * w, cos(t) * abs(cos(t)) * h };
-		};
-
-		Parametric s1{ xyf.gxi(4), xyf.gyi(6), func,
+		Parametric s1{ xyf.gxi(4), xyf.gyi(6), sfunc(w,h),
 			xyf.ang(0.4), xyf.ang(1.1), std::max(w,h) };
 		return { 's', {s1} };
 	}
 	Character CharFactory::make_t() {
-		return { 't', {} };
+		xyf.setGrid(16, 9);
+		LineSet s1{ { xyf.p(7,0), xyf.p(7,8), xyf.p(2,3), xyf.p(13,3), xyf.p(10,9), xyf.p(13,9) } };
+		BezierCurve<2> s2{ { xyf.p(7,8), xyf.p(7,9), xyf.p(10,9) } };
+		return { 't', {s1,s2} };
 	}
-	Character CharFactory::make_u() { return {'u', {}}; }
-	Character CharFactory::make_v() { return {'v', {}}; }
-	Character CharFactory::make_w() { return {'w', {}}; }
-	Character CharFactory::make_x() { return {'x', {}}; }
-	Character CharFactory::make_y() { return {'y', {}}; }
-	Character CharFactory::make_z() { return {'z', {}}; }
+	Character CharFactory::make_u() {
+		xyf.setGrid(8, 9);
+		LineSet s1{ { xyf.p(1,4), xyf.p(1,8), xyf.p(6,4), xyf.p(6,9) } };
+		BezierCurve<2> s2{ { xyf.p(1,8), xyf.p(3.5,10), xyf.p(6,8) } };
+		return { 'u', {s1,s2} };
+	}
+	Character CharFactory::make_v() {
+		xyf.setGrid(8, 9);
+		Polyline s1{ { xyf.p(1,3), xyf.p(4,9), xyf.p(7,3) } };
+		return { 'v', {s1} };
+	}
+	Character CharFactory::make_w() {
+		xyf.setGrid(8, 9);
+		Polyline s1{ { xyf.p(1,3), xyf.p(2,9), xyf.p(4,5), xyf.p(6,9), xyf.p(7,3) } };
+		return { 'w', {s1} };
+	}
+	Character CharFactory::make_x() {
+		xyf.setGrid(8, 9);
+		LineSet s1{ { xyf.p(1,3), xyf.p(7,9), xyf.p(1,9), xyf.p(7,3) } };
+		return { 'x', {s1} };
+	}
+	Character CharFactory::make_y() {
+		xyf.setGrid(8, 9);
+		Polyline s1{ { xyf.p(1,3), xyf.p(4,9), xyf.p(7,3) } };
+		BezierCurve<2> s2{ { xyf.p(1,12), xyf.p(3,11), xyf.p(4,9) } };
+		return { 'y', {s1,s2} };
+	}
+	Character CharFactory::make_z() {
+		xyf.setGrid(8, 9);
+		Polyline s1{ { xyf.p(1,3), xyf.p(7,3), xyf.p(1,9), xyf.p(7,9) } };
+		return { 'z', {s1} };
+	}
 	Character CharFactory::make_cobr() { return {'\0', {}}; }
 	Character CharFactory::make_pipe() { return {'\0', {}}; }
 	Character CharFactory::make_ccbr() { return {'\0', {}}; }
 	Character CharFactory::make_tild() { return { '\0', {} }; }
+	Character CharFactory::make_bell() {
+		xyf.setGrid(20,20);
+		Ellipse s1{ xyf.gxi(10), xyf.gyi(1), xyf.glxi(1), xyf.glyi(1)};
+		BezierCurve<2> s2{ { xyf.p(0, 18), xyf.p(3, 14), xyf.p(3, 6) } };
+		BezierCurve<2> s3{ { xyf.p(20, 18), xyf.p(17, 14), xyf.p(17, 6) } };
+		BezierCurve<2> s4{ { xyf.p(3, 6), xyf.p(10, 0), xyf.p(17, 6) } };
+		LineSet s5{ { xyf.p(0, 18), xyf.p(20, 18) } };
+		Arc s6{ xyf.gxi(10), xyf.gyi(19), xyf.glxi(1), xyf.glyi(1), xyf.ang(0.5), xyf.ang(1) };
+		return { '\0', {s1,s2,s3,s4,s5,s6} };
+	}
 }

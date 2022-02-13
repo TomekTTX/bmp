@@ -173,5 +173,6 @@ namespace shp {
 		Character make_pipe();
 		Character make_ccbr();
 		Character make_tild();
+		Character make_bell();
 	};
 }
