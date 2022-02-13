@@ -334,7 +334,7 @@ namespace shp {
 			addShape(*comp);
 	}
 
-	String::String(std::string_view str, const StringParams &params) : asciiStr() {
+	String::String(const std::string_view& str, const StringParams &params) : asciiStr() {
 		int32_t x = params.x, y = params.y;
 		const int32_t
 			dx = rnd(XYFactory::baseSizeX * params.scaleX) + params.interX,

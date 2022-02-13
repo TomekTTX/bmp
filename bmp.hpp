@@ -109,10 +109,6 @@ namespace bmp {
 		Color bgColor;
 		uint8_t pad_size;
 	public:
-		using BezierArrayQuadr = std::array<Pos<double>, 3>;
-		using BezierArrayCubic = std::array<Pos<double>, 4>;
-		using ParamFunc = std::function<double(double)>;
-
 		BMP(std::istream &ist, Color bgColor = colors::white);
 		BMP(std::size_t width, std::size_t height, Color bgColor = colors::white);
 		BMP(const std::string_view &fileName, Color bgColor = colors::white);
@@ -161,7 +157,10 @@ namespace bmp {
 		void writeTo(const std::string_view &fileName) const;
 
 
-		// simplified drawing functions:
+		// old drawing functions:
+		using BezierArrayQuadr = std::array<Pos<double>, 3>;
+		using BezierArrayCubic = std::array<Pos<double>, 4>;
+		using ParamFunc = std::function<double(double)>;
 
 		void drawSimpleLine(int32_t x, int32_t y, int8_t dx, int8_t dy, int32_t len, Color color);
 		void drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, Color color);

@@ -47,7 +47,7 @@ struct Pos {
 		return rotated(sin(angle), cos(angle));
 	}
 	Pos rotated(double sina, double cosa) const {
-		return Pos(Pos<double>{ x *cosa + y * sina, -x * sina + y * cosa });
+		return Pos(Pos<double>{ x * cosa + y * sina, -x * sina + y * cosa });
 	}
 	Pos rotated(double angle, Pos axis) const {
 		return (*this - axis).rotated(sin(angle), cos(angle)) + axis;

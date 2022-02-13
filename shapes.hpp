@@ -204,8 +204,9 @@ namespace shp {
 	};
 
 	class Parametric : public Shape {
-	private:
+	public:
 		using ParamFunc = std::function<PointF(double)>;
+	private:
 
 		double tm, tM, density, rotation = 0.;
 		ParamFunc func;
@@ -466,7 +467,7 @@ namespace shp {
 		std::string asciiStr{};
 	public:
 		String() {}	
-		String(std::string_view str, const StringParams &params);
+		String(const std::string_view &str, const StringParams &params);
 
 		inline const std::string &str() const { return asciiStr; }
 		
